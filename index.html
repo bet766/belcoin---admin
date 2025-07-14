@@ -5,62 +5,168 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Painel Administrativo Belcoin</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f0f2f5; }
-    h1 { color: #2c3e50; }
-    #loginDiv, #painelDiv { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #aaa; }
-    input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-    button { padding: 10px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #2980b9; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
-    .btn-edit, .btn-delete { cursor: pointer; padding: 5px 8px; border: none; border-radius: 4px; }
-    .btn-edit { background: #27ae60; color: white; }
-    .btn-delete { background: #e74c3c; color: white; }
-    #logoutBtn { margin-top: 10px; background: #e67e22; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 220px;
+      height: 100vh;
+      background: #111;
+      padding-top: 20px;
+    }
+
+    .sidebar h2 {
+      color: white;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 12px 20px;
+      text-decoration: none;
+    }
+
+    .sidebar a:hover {
+      background: #333;
+    }
+
+    .main {
+      margin-left: 220px;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px #ccc;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    input, select, button {
+      padding: 8px;
+      margin: 5px 0;
+    }
+
+    .btn {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #2980b9;
+    }
+
+    #logoutBtn {
+      background: #e67e22;
+      margin-top: 10px;
+    }
+
+    .menu-active {
+      background: #2980b9;
+    }
+
+    .title-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title-section h2 {
+      margin: 0;
+    }
+
+    .status-aprovado {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-pendente {
+      color: orange;
+      font-weight: bold;
+    }
+
+    .status-recusado {
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-<div id="loginDiv">
-  <h1>Login Admin Belcoin</h1>
-  <input type="email" id="email" placeholder="E-mail" />
-  <input type="password" id="password" placeholder="Senha" />
-  <button onclick="login()">Entrar</button>
-  <p id="msgLogin" style="color:red;"></p>
-</div>
+  <div class="sidebar">
+    <h2>Belcoin Admin</h2>
+    <a href="#" onclick="mostrarAba('usuarios')">Usuários</a>
+    <a href="#" onclick="mostrarAba('investimentos')">Investimentos</a>
+    <a href="#" onclick="mostrarAba('saques')">Saques</a>
+    <a href="#" onclick="mostrarAba('cupons')">Cupons</a>
+    <a href="#" onclick="mostrarAba('logs')">Logs</a>
+    <a href="#" onclick="mostrarAba('depositos')">Depósitos do Dia</a>
+    <a href="#" onclick="mostrarAba('cargos')">Equipe/Cargos</a>
+    <a href="#" id="logoutBtn" onclick="logout()">Sair</a>
+  </div>
 
-<div id="painelDiv" style="display:none;">
-  <h1>Painel Administrativo</h1>
-  <button id="logoutBtn" onclick="logout()">Sair</button>
-  <table id="usuariosTable">
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>Email</th>
-        <th>CPF</th>
-        <th>Telefone</th>
-        <th>Saldo</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Usuários vão aparecer aqui -->
-    </tbody>
-  </table>
-</div>
+  <div class="main">
+    <div id="painelDiv" class="card">
+      <div class="title-section">
+        <h2>Painel Administrativo Belcoin</h2>
+        <p id="cargoLabel"></p>
+      </div>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+      <!-- AQUI VÃO FICAR OS CONTEÚDOS DAS ABAS (que vou mandar na Parte 2) -->
+      <div id="usuarios" class="aba hidden">Carregando usuários...</div>
+      <div id="investimentos" class="aba hidden">Carregando investimentos...</div>
+      <div id="saques" class="aba hidden">Carregando saques...</div>
+      <div id="cupons" class="aba hidden">Carregando cupons...</div>
+      <div id="logs" class="aba hidden">Carregando logs...</div>
+      <div id="depositos" class="aba hidden">Carregando depósitos...</div>
+      <div id="cargos" class="aba hidden">Carregando equipe...</div>
+    </div>
+
+    <div id="loginDiv" class="card">
+      <h2>Login Admin</h2>
+      <input type="email" id="email" placeholder="E-mail" />
+      <input type="password" id="password" placeholder="Senha" />
+      <button class="btn" onclick="login()">Entrar</button>
+      <p id="msgLogin" style="color:red;"></p>
+    </div>
+  </div>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
 <script>
-  // Configuração Firebase (seu config)
+  // Configuração do Firebase (já com seu projeto Belcoin)
   const firebaseConfig = {
     apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
     authDomain: "belcoin-92ee8.firebaseapp.com",
     projectId: "belcoin-92ee8",
-    storageBucket: "belcoin-92ee8.firebasestorage.app",
+    storageBucket: "belcoin-92ee8.appspot.com",
     messagingSenderId: "604040948702",
     appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
     measurementId: "G-SD1EYWDWPS"
@@ -71,82 +177,391 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  // Variáveis globais
+  let usuarioLogado = null;
+  let cargoUsuario = null;
+
+  // Elementos
+  const loginDiv = document.getElementById('loginDiv');
+  const painelDiv = document.getElementById('painelDiv');
+  const cargoLabel = document.getElementById('cargoLabel');
+
+  // Mostrar aba do menu
+  function mostrarAba(aba) {
+    if (!temPermissaoParaAba(aba)) {
+      alert('Acesso negado para esta aba.');
+      return;
+    }
+    document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
+    document.getElementById(aba).classList.remove('hidden');
+    atualizarMenuAtivo(aba);
+
+    // Carregar dados específicos por aba
+    switch(aba) {
+      case 'usuarios': carregarUsuarios(); break;
+      case 'investimentos': carregarInvestimentos(); break;
+      case 'saques': carregarSaques(); break;
+      case 'cupons': carregarCupons(); break;
+      case 'logs': carregarLogs(); break;
+      case 'depositos': carregarDepositos(); break;
+      case 'cargos': carregarEquipe(); break;
+    }
+  }
+
+  function atualizarMenuAtivo(aba) {
+    document.querySelectorAll('.sidebar a').forEach(a => {
+      if (a.getAttribute('onclick') === mostrarAba('${aba}')) {
+        a.classList.add('menu-active');
+      } else {
+        a.classList.remove('menu-active');
+      }
+    });
+  }
+
   // Login
-  async function login() {
+  function login() {
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
-    const msgLogin = document.getElementById('msgLogin');
-    msgLogin.textContent = '';
-
-    try {
-      await auth.signInWithEmailAndPassword(email, password);
-      showPainel();
-    } catch (error) {
-      msgLogin.textContent = "Erro no login: " + error.message;
+    if (!email || !password) {
+      document.getElementById('msgLogin').innerText = 'Preencha e-mail e senha.';
+      return;
     }
+    auth.signInWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        usuarioLogado = userCredential.user;
+        verificarCargo(usuarioLogado);
+        document.getElementById('msgLogin').innerText = '';
+      })
+      .catch(error => {
+        document.getElementById('msgLogin').innerText = 'Erro: ' + error.message;
+      });
   }
 
   // Logout
   function logout() {
-    auth.signOut();
-  }
-
-  // Mostrar painel
-  function showPainel() {
-    document.getElementById('loginDiv').style.display = 'none';
-    document.getElementById('painelDiv').style.display = 'block';
-    carregarUsuarios();
-  }
-
-  // Monitorar estado do usuário logado
-  auth.onAuthStateChanged(user => {
-    if(user) {
-      showPainel();
-    } else {
-      document.getElementById('loginDiv').style.display = 'block';
-      document.getElementById('painelDiv').style.display = 'none';
-    }
-  });
-
-  // Carregar usuários do Firestore
-  async function carregarUsuarios() {
-    const tbody = document.querySelector('#usuariosTable tbody');
-    tbody.innerHTML = '';
-
-    const snapshot = await db.collection('usuarios').get();
-    snapshot.forEach(doc => {
-      const user = doc.data();
-      const tr = document.createElement('tr');
-
-      tr.innerHTML = `
-        <td><input type="text" value="${user.nome || ''}" onchange="atualizarCampo('${doc.id}', 'nome', this.value)" /></td>
-        <td><input type="email" value="${user.email || ''}" onchange="atualizarCampo('${doc.id}', 'email', this.value)" /></td>
-        <td><input type="text" value="${user.cpf || ''}" onchange="atualizarCampo('${doc.id}', 'cpf', this.value)" /></td>
-        <td><input type="text" value="${user.telefone || ''}" onchange="atualizarCampo('${doc.id}', 'telefone', this.value)" /></td>
-        <td><input type="number" value="${user.saldo || 0}" onchange="atualizarCampo('${doc.id}', 'saldo', parseFloat(this.value))" /></td>
-        <td>
-          <button class="btn-delete" onclick="deletarUsuario('${doc.id}')">Excluir</button>
-        </td>
-      `;
-
-      tbody.appendChild(tr);
+    auth.signOut().then(() => {
+      usuarioLogado = null;
+      cargoUsuario = null;
+      painelDiv.style.display = 'none';
+      loginDiv.style.display = 'block';
+      document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
+      cargoLabel.innerText = '';
     });
   }
 
-  // Atualizar campo no Firestore
-  function atualizarCampo(id, campo, valor) {
-    db.collection('usuarios').doc(id).update({ [campo]: valor });
-  }
-
-  // Deletar usuário
-  function deletarUsuario(id) {
-    if(confirm('Deseja mesmo excluir esse usuário?')) {
-      db.collection('usuarios').doc(id).delete().then(() => {
-        carregarUsuarios();
+  // Verifica o cargo do usuário no Firestore e configura permissões
+  function verificarCargo(user) {
+    db.collection('usuarios').doc(user.uid).get()
+      .then(doc => {
+        if (doc.exists) {
+          cargoUsuario = doc.data().cargo || 'restrito';
+          // Força master se email for seu (troque pelo seu email)
+          if (user.email === 'seuemail@dominio.com') {
+            cargoUsuario = 'master';
+          }
+          mostrarPainel();
+        } else {
+          alert('Usuário sem cargo definido. Contate o administrador.');
+          logout();
+        }
+      })
+      .catch(() => {
+        alert('Erro ao buscar cargo do usuário.');
+        logout();
       });
-    }
   }
-</script>
 
-</body>
-</html>
+  // Mostra painel e menu conforme cargo
+  function mostrarPainel() {
+    loginDiv.style.display = 'none';
+    painelDiv.style.display = 'block';
+    cargoLabel.innerText = Cargo: ${cargoUsuario};
+
+    // Mostrar/ocultar links do menu conforme cargo
+    document.querySelectorAll('.sidebar a').forEach(a => {
+      const aba = a.getAttribute('onclick')?.match(/mostrarAba'(\w+)'/)?.[1];
+      if (!aba) return;
+      if (aba === 'logoutBtn') return;
+
+      if (temPermissaoParaAba(aba)) {
+        a.style.display = 'block';
+      } else {
+        a.style.display = 'none';
+      }
+    });
+
+    mostrarAba('usuarios'); // Aba padrão
+  }
+
+  // Função que define quais cargos podem acessar qual aba
+  function temPermissaoParaAba(aba) {
+    const permissoes = {
+      usuarios: ['master', 'admin', 'suporte'],
+      investimentos: ['master', 'admin', 'investimentos'],
+      saques: ['master', 'admin', 'financeiro'],
+      cupons: ['master', 'admin'],
+      logs: ['master', 'admin', 'logs'],
+      depositos: ['master', 'admin', 'financeiro'],
+      cargos: ['master']
+    };
+    return permissoes[aba]?.includes(cargoUsuario);
+  }
+
+  // ========== CARREGAR DADOS DAS ABAS ==========
+
+  // Usuários
+  function carregarUsuarios() {
+    const div = document.getElementById('usuarios');
+    div.innerHTML = '<h3>Carregando usuários...</h3>';
+    db.collection('usuarios').get().then(snapshot => {
+      if (snapshot.empty) {
+        div.innerHTML = '<p>Nenhum usuário encontrado.</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>Nome</th><th>Email</th><th>CPF</th><th>Telefone</th><th>Saldo</th><th>Cargo</th><th>Ações</th></tr></thead><tbody>';
+      snapshot.forEach(doc => {
+        const u = doc.data();
+        html += `<tr>
+          <td><input type="text" value="${u.nome || ''}" onchange="editarUsuario('${doc.id}', 'nome', this.value)" /></td>
+          <td><input type="email" value="${u.email || ''}" onchange="editarUsuario('${doc.id}', 'email', this.value)" /></td>
+          <td><input type="text" value="${u.cpf || ''}" onchange="editarUsuario('${doc.id}', 'cpf', this.value)" /></td>
+          <td><input type="text" value="${u.telefone || ''}" onchange="editarUsuario('${doc.id}', 'telefone', this.value)" /></td>
+          <td><input type="number" step="0.01" value="${u.saldo || 0}" ${cargoUsuario === 'master' || cargoUsuario === 'admin' ? '' : 'disabled'} onchange="editarUsuario('${doc.id}', 'saldo', parseFloat(this.value))" /></td>
+          <td>${u.cargo || 'restrito'}</td>
+          <td><button class="btn" onclick="excluirUsuario('${doc.id}')">Excluir</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }).catch(err => {
+      div.innerHTML = '<p>Erro ao carregar usuários: ' + err.message + '</p>';
+    });
+  }
+
+  // Editar usuário
+  function editarUsuario(id, campo, valor) {
+    if ((campo === 'saldo') && !(cargoUsuario === 'master' || cargoUsuario === 'admin')) {
+      alert('Você não tem permissão para editar saldo.');
+      carregarUsuarios();
+      return;
+    }
+    const dados = {};
+    dados[campo] = valor;
+    db.collection('usuarios').doc(id).update(dados)
+      .then(() => {
+        if (campo === 'saldo') alert('Saldo atualizado com sucesso.');
+      })
+      .catch(err => {
+        alert('Erro ao atualizar: ' + err.message);
+      });
+  }
+
+  // Excluir usuário
+  function excluirUsuario(id) {
+    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
+    db.collection('usuarios').doc(id).delete()
+      .then(() => {
+        alert('Usuário excluído.');
+        carregarUsuarios();
+      })
+      .catch(err => {
+        alert('Erro ao excluir usuário: ' + err.message);
+      });
+  }
+
+  // Investimentos
+  function carregarInvestimentos() {
+    const div = document.getElementById('investimentos');
+    div.innerHTML = '<h3>Carregando investimentos...</h3>';
+    db.collection('investimentos').get().then(snapshot => {
+      if (snapshot.empty) {
+        div.innerHTML = '<p>Nenhum investimento encontrado.</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>Usuário</th><th>Valor</th><th>Prazo (dias)</th><th>Status</th><th>Data Inicial</th><th>Data Final</th><th>Ações</th></tr></thead><tbody>';
+      snapshot.forEach(doc => {
+        const i = doc.data();
+        html += `<tr>
+          <td>${i.usuarioNome || i.usuarioId || 'N/D'}</td>
+          <td><input type="number" step="0.01" value="${i.valor || 0}" onchange="editarInvestimento('${doc.id}', 'valor', parseFloat(this.value))" /></td>
+          <td><input type="number" value="${i.prazo || 0}" onchange="editarInvestimento('${doc.id}', 'prazo', parseInt(this.value))" /></td>
+          <td>${i.status || 'pendente'}</td>
+          <td>${i.dataInicial ? i.dataInicial.toDate().toLocaleDateString() : ''}</td>
+          <td>${i.dataFinal ? i.dataFinal.toDate().toLocaleDateString() : ''}</td>
+          <td><button class="btn" onclick="excluirInvestimento('${doc.id}')">Excluir</button></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }).catch(err => {
+      div.innerHTML = '<p>Erro ao carregar investimentos: ' + err.message + '</p>';
+    });
+  }
+
+  // Editar investimento
+  function editarInvestimento(id, campo, valor) {
+    const dados = {};
+    dados[campo] = valor;
+    db.collection('investimentos').doc(id).update(dados)
+      .then(() => {})
+      .catch(err => alert('Erro ao atualizar investimento: ' + err.message));
+  }
+
+  // Excluir investimento
+  function excluirInvestimento(id) {
+    if (!confirm('Tem certeza que deseja excluir este investimento?')) return;
+    db.collection('investimentos').doc(id).delete()
+      .then(() => {
+        alert('Investimento excluído.');
+        carregarInvestimentos();
+      })
+      .catch(err => alert('Erro ao excluir investimento: ' + err.message));
+  }
+
+  // Saques
+  function carregarSaques() {
+    const div = document.getElementById('saques');
+    div.innerHTML = '<h3>Carregando saques...</h3>';
+    db.collection('saques').get().then(snapshot => {
+      if (snapshot.empty) {
+        div.innerHTML = '<p>Nenhum saque encontrado.</p>';
+        return;
+      }
+      let html = '<table><thead><tr><th>Usuário</th><th>Valor</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead><tbody>';
+      snapshot.forEach(doc => {
+        const s = doc.data();
+        let statusClass = '';
+        if (s.status === 'aprovado') statusClass = 'status-aprovado';
+        else if (s.status === 'pendente') statusClass = 'status-pendente';
+        else if (s.status === 'recusado') statusClass = 'status-recusado';
+        html += `<tr>
+          <td>${s.usuarioId || 'N/D'}</td>
+          <td>${s.valor || 0}</td>
+          <td class="${statusClass}">${s.status || 'pendente'}</td>
+          <td>${s.data ? s.data.toDate().toLocaleDateString() : ''}</td>
+          <td>`;
+        if ((cargoUsuario === 'master' || cargoUsuario === 'admin') && s.status === 'pendente') {
+          html += `<button class="btn" onclick="aprovarSaque('${doc.id}')">Aprovar</button>
+                   <button class="btn" onclick="recusarSaque('${doc.id}')">Recusar</button>`;
+        } else {
+          html += '-';
+        }
+        html += '</td></tr>';
+      });
+      html += '</tbody></table>';
+      div.innerHTML = html;
+    }).catch(err => {
+      div.innerHTML = '<p>Erro ao carregar saques: ' + err.message + '</p>';
+    });
+  }
+
+  // Aprovar saque
+  function aprovarSaque(id) {
+    if (!confirm('Aprovar saque?')) return;
+    db.collection('saques').doc(id).update({status: 'aprovado'})
+      .then(() => {
+        alert('Saque aprovado.');
+        carregarSaques();
+      })
+      .catch(err => alert('Erro ao aprovar saque: ' + err.message));
+  }
+
+  // Recusar saque
+  function recusarSaque(id) {
+    if (!confirm('Recusar saque?')) return;
+    db.collection('saques').doc(id).update({status: 'recusado'})
+      .then(() => {
+        alert('Saque recusado.');
+        carregarSaques();
+      })
+      .catch(err => alert('Erro ao recusar saque: ' + err.message));
+  }
+
+  // Cupons
+  function carregarCupons() {
+    const div = document.getElementById('cupons');
+    div.innerHTML = '<h3>Carregando cupons...</h3>';
+    db.collection('cupons').get().then(snapshot => {
+      if (snapshot.empty) {
+        div.innerHTML = '<p>Nenhum cupom encontrado.</p>';
+        return;
+      }
+      let html = <button class="btn" onclick="mostrarFormularioCupom()">Novo Cupom</button>;
+      html += '<table><thead><tr><th>Código</th><th>Valor</th><th>Ativo</th><th>Usado Por</th><th>Ações</th></tr></thead><tbody>';
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        html += `<tr>
+          <td>${c.codigo || ''}</td>
+          <td>${c.valor || 0}</td>
+          <td>${c.ativo ? 'Sim' : 'Não'}</td>
+          <td>${c.usadoPor || ''}</td>
+          <td>
+            <button class="btn" onclick="editarCupom('${doc.id}')">Editar</button>
+            <button class="btn" onclick="excluirCupom('${doc.id}')">Excluir</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      html += `<div id="formCupom" class="hidden">
+        <h4 id="tituloFormCupom">Novo Cupom</h4>
+        <input type="text" id="codigoCupom" placeholder="Código" />
+        <input type="number" step="0.01" id="valorCupom" placeholder="Valor" />
+        <label><input type="checkbox" id="ativoCupom" checked /> Ativo</label><br/>
+        <button class="btn" onclick="salvarCupom()">Salvar</button>
+        <button class="btn" onclick="cancelarFormularioCupom()">Cancelar</button>
+      </div>`;
+      div.innerHTML = html;
+    }).catch(err => {
+      div.innerHTML = '<p>Erro ao carregar cupons: ' + err.message + '</p>';
+    });
+  }
+
+  let cupomEditandoId = null;
+
+  function mostrarFormularioCupom() {
+    cupomEditandoId = null;
+    document.getElementById('formCupom').classList.remove('hidden');
+    document.getElementById('tituloFormCupom').innerText = 'Novo Cupom';
+    document.getElementById('codigoCupom').value = '';
+    document.getElementById('valorCupom').value = '';
+    document.getElementById('ativoCupom').checked = true;
+  }
+
+  function cancelarFormularioCupom() {
+    document.getElementById('formCupom').classList.add('hidden');
+  }
+
+  function editarCupom(id) {
+    cupomEditandoId = id;
+    db.collection('cupons').doc(id).get().then(doc => {
+      if (doc.exists) {
+        const c = doc.data();
+        document.getElementById('formCupom').classList.remove('hidden');
+        document.getElementById('tituloFormCupom').innerText = 'Editar Cupom';
+        document.getElementById('codigoCupom').value = c.codigo || '';
+        document.getElementById('valorCupom').value = c.valor || 0;
+        document.getElementById('ativoCupom').checked = c.ativo || false;
+      }
+    });
+  }
+
+  function salvarCupom() {
+    const codigo = document.getElementById('codigoCupom').value.trim();
+    const valor = parseFloat(document.getElementById('valorCupom').value);
+    const ativo = document.getElementById('ativoCupom').checked;
+
+    if (!codigo || isNaN(valor)) {
+      alert('Preencha código e valor válidos.');
+      return;
+    }
+
+    const dados = {
+      codigo,
+      valor,
+      ativo,
+      usadoPor: '',
+      dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if (cupomEditandoId) {
+      db.collection('cupons').doc(cupomEditandoId).update(dados
