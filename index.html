@@ -2,152 +2,109 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Painel Administrativo - BeefundApp</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Administrativo - Belcoin</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-    .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
-    h2 { text-align: center; }
-    #painelDiv { display: none; }
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background-color: #333; color: white; }
-    button { margin: 5px; padding: 6px 12px; cursor: pointer; }
-    #logoutBtn { float: right; }
-    input { width: 100%; padding: 8px; margin: 5px 0 15px 0; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background: #444; color: white; }
+    button { padding: 6px 12px; margin-right: 5px; }
+    .logout { float: right; }
+    input { padding: 5px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Painel Administrativo BeefundApp</h2>
-
-    <div id="loginDiv">
-      <label for="emailInput">Email:</label><br />
-      <input type="email" id="emailInput" value="cjogos3339@gmail.com" /><br />
-
-      <label for="passwordInput">Senha:</label><br />
-      <input type="password" id="passwordInput" value="rbarbat7.." /><br />
-
-      <button onclick="login()">Entrar</button>
-    </div>
-
-    <div id="painelDiv">
-      <button id="logoutBtn" onclick="logout()">Sair</button>
-      <h3>Lista de Usuários</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Email</th>
-            <th>CPF</th>
-            <th>Telefone</th>
-            <th>Saldo</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="userList"></tbody>
-      </table>
-    </div>
+    <h2>Painel Belcoin <button onclick="logout()" class="logout">Sair</button></h2>
+    <p id="welcome"></p>
+    <table id="userTable">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>CPF</th>
+          <th>Telefone</th>
+          <th>Saldo (R$)</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
   </div>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
   <script>
+    // Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyCfmFkLcw5RXPro2vRtqPVrxqOIu9GQ_XM",
-      authDomain: "beefundapp-982d2.firebaseapp.com",
-      databaseURL: "https://beefundapp-982d2-default-rtdb.firebaseio.com",
-      projectId: "beefundapp-982d2",
-      storageBucket: "beefundapp-982d2.firebasestorage.app",
-      messagingSenderId: "311716200535",
-      appId: "1:311716200535:web:ea31b9e87ffa48cdad6312",
-      measurementId: "G-FGG7YH3FR3"
+      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
+      authDomain: "belcoin-92ee8.firebaseapp.com",
+      projectId: "belcoin-92ee8",
+      storageBucket: "belcoin-92ee8.appspot.com",
+      messagingSenderId: "604040948702",
+      appId: "1:604040948702:web:eb4f5f50ea11f25b4e3778"
     };
-
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    const loginDiv = document.getElementById('loginDiv');
-    const painelDiv = document.getElementById('painelDiv');
-    const userList = document.getElementById('userList');
+    // Auto login com admin
+    auth.signInWithEmailAndPassword("cjogos3339@gmail.com", "RBAP7.0")
+      .then(() => {
+        document.getElementById("welcome").innerText = "Bem-vindo, Admin!";
+        carregarUsuarios();
+      })
+      .catch(error => {
+        alert("Erro no login: " + error.message);
+      });
 
-    function login() {
-      const email = document.getElementById('emailInput').value.trim();
-      const password = document.getElementById('passwordInput').value;
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          if(email.toLowerCase() !== 'cjogos3339@gmail.com') {
-            alert('Acesso negado: usuário não autorizado.');
-            auth.signOut();
-            return;
-          }
-          loginDiv.style.display = 'none';
-          painelDiv.style.display = 'block';
-          carregarUsuarios();
-        })
-        .catch(error => {
-          alert('Erro no login: ' + error.message);
+    function carregarUsuarios() {
+      db.collection("usuarios").onSnapshot(snapshot => {
+        const tbody = document.getElementById("userList");
+        tbody.innerHTML = "";
+        snapshot.forEach(doc => {
+          const user = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${user.nome || ""}</td>
+            <td>${user.email || ""}</td>
+            <td>${user.cpf || ""}</td>
+            <td>${user.telefone || ""}</td>
+            <td>${parseFloat(user.saldo || 0).toFixed(2)}</td>
+            <td>
+              <button onclick="alterarSaldo('${doc.id}')">Editar Saldo</button>
+              <button onclick="deletarConta('${doc.id}')">Excluir</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
         });
+      });
+    }
+
+    function alterarSaldo(userId) {
+      const novoSaldo = prompt("Novo saldo em R$:");
+      if (novoSaldo !== null) {
+        db.collection("usuarios").doc(userId).update({ saldo: parseFloat(novoSaldo) });
+      }
+    }
+
+    function deletarConta(userId) {
+      if (confirm("Deseja excluir esta conta?")) {
+        db.collection("usuarios").doc(userId).delete();
+      }
     }
 
     function logout() {
       auth.signOut().then(() => {
-        painelDiv.style.display = 'none';
-        loginDiv.style.display = 'block';
+        alert("Deslogado com sucesso.");
+        window.location.reload();
       });
     }
-
-    function carregarUsuarios() {
-      userList.innerHTML = '';
-      db.collection('usuarios').get().then(snapshot => {
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${data.nome || ''}</td>
-            <td>${data.email || ''}</td>
-            <td>${data.cpf || ''}</td>
-            <td>${data.telefone || ''}</td>
-            <td>R$ ${data.saldo != null ? data.saldo.toFixed(2) : '0.00'}</td>
-            <td>
-              <button onclick="alterarSaldo('${doc.id}', true)">+ R$10</button>
-              <button onclick="alterarSaldo('${doc.id}', false)">- R$10</button>
-            </td>
-          `;
-          userList.appendChild(tr);
-        });
-      });
-    }
-
-    function alterarSaldo(userId, aumentar) {
-      const userRef = db.collection('usuarios').doc(userId);
-      db.runTransaction(transaction => {
-        return transaction.get(userRef).then(doc => {
-          if (!doc.exists) throw "Documento não encontrado!";
-          let saldoAtual = doc.data().saldo || 0;
-          let novoSaldo = aumentar ? saldoAtual + 10 : saldoAtual - 10;
-          if (novoSaldo < 0) novoSaldo = 0;
-          transaction.update(userRef, { saldo: novoSaldo });
-        });
-      }).then(() => {
-        carregarUsuarios();
-      }).catch(err => {
-        alert('Erro ao alterar saldo: ' + err);
-      });
-    }
-
-    auth.onAuthStateChanged(user => {
-      if(user && user.email.toLowerCase() === 'cjogos3339@gmail.com') {
-        loginDiv.style.display = 'none';
-        painelDiv.style.display = 'block';
-        carregarUsuarios();
-      } else {
-        painelDiv.style.display = 'none';
-        loginDiv.style.display = 'block';
-      }
-    });
   </script>
 </body>
 </html>
