@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Painel Administrativo Belcoin</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+    h1 { color: #333; }
+    #loginDiv, #painelDiv { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    label { display: block; margin-top: 10px; }
+    input[type=email], input[type=password], input[type=text], input[type=number] { width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box; }
+    button { margin-top: 15px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
+    tr:hover { background-color: #f1f1f1; }
+    .btn-small { padding: 5px 10px; font-size: 12px; margin-right: 5px; }
+    .btn-danger { background-color: #dc3545; }
+    .btn-danger:hover { background-color: #a71d2a; }
+    .btn-success { background-color: #28a745; }
+    .btn-success:hover { background-color: #1c7430; }
+    .input-saldo { width: 70px; }
+    #msg { color: green; margin-top: 10px; }
+    #errorMsg { color: red; margin-top: 10px; }
+  </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+  <div id="loginDiv">
+    <h1>Login Administrativo Belcoin</h1>
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="admin@belcoin.com" />
+    <label for="password">Senha</label>
+    <input type="password" id="password" placeholder="Sua senha" />
+    <button id="loginBtn">Entrar</button>
+    <div id="errorMsg"></div>
+  </div>
+
+  <div id="painelDiv" style="display:none;">
+    <h1>Painel Administrativo</h1>
+    <button id="logoutBtn">Sair</button>
+
+    <h2>Usuários</h2>
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Email</th>
+          <th>CPF</th>
+          <th>Telefone</th>
+          <th>Saldo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    // Config Firebase (SEU FIREBASE AQUI)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
+      authDomain: "belcoin-92ee8.firebaseapp.com",
+      projectId: "belcoin-92ee8",
+      storageBucket: "belcoin-92ee8.appspot.com",
+      messagingSenderId: "604040948702",
+      appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
+      measurementId: "G-SD1EYWDWPS"
+    };
+
+    // Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const loginDiv = document.getElementById('loginDiv');
+    const painelDiv = document.getElementById('painelDiv');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const usersTableBody = document.querySelector('#usersTable tbody');
+    const msg = document.getElementById('msg');
+
+    // Função para mostrar erro
+    function showError(text) {
+      errorMsg.textContent = text;
+      setTimeout(() => errorMsg.textContent = '', 4000);
+    }
+
+    // Função para mostrar mensagem
+    function showMsg(text) {
+      msg.textContent = text;
+      setTimeout(() => msg.textContent = '', 4000);
+    }
+
+    // Login
+    loginBtn.addEventListener('click', () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      if (!email || !password) {
+        showError('Preencha email e senha!');
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          loginDiv.style.display = 'none';
+          painelDiv.style.display = 'block';
+          loadUsers();
+        })
+        .catch(error => {
+          showError('Erro no login: ' + error.message);
+        });
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      auth.signOut().then(() => {
+        painelDiv.style.display = 'none';
+        loginDiv.style.display = 'block';
+      });
+    });
+
+    // Monitorar estado de autenticação
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginDiv.style.display = 'none';
+        painelDiv.style.display = 'block';
+        loadUsers();
+      } else {
+        loginDiv.style.display = 'block';
+        painelDiv.style.display = 'none';
+      }
+    });
+
+    // Carregar usuários do Firestore
+    function loadUsers() {
+      usersTableBody.innerHTML = 'Carregando...';
+      db.collection('users').get()
+        .then(snapshot => {
+          usersTableBody.innerHTML = '';
+          if (snapshot.empty) {
+            usersTableBody.innerHTML = '<tr><td colspan="6">Nenhum usuário encontrado.</td></tr>';
+            return;
+          }
+          snapshot.forEach(doc => {
+            const user = doc.data();
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+              <td>${user.nome || '-'}</td>
+              <td>${user.email || '-'}</td>
+              <td>${user.cpf || '-'}</td>
+              <td>${user.telefone || '-'}</td>
+              <td>
+                <input class="input-saldo" type="number" value="${user.saldo || 0}" min="0" data-id="${doc.id}" />
+              </td>
+              <td>
+                <button class="btn-success btn-small" data-id="${doc.id}">Salvar</button>
+                <button class="btn-danger btn-small" data-id="${doc.id}">Excluir</button>
+              </td>
+            `;
+
+            usersTableBody.appendChild(tr);
+          });
+
+          // Adicionar eventos aos botões Salvar e Excluir
+          document.querySelectorAll('.btn-success').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-id');
+              const inputSaldo = document.querySelector(input[data-id="${id}"]);
+              const novoSaldo = Number(inputSaldo.value);
+              if (novoSaldo < 0) {
+                alert('Saldo não pode ser negativo');
+                return;
+              }
+              db.collection('users').doc(id).update({ saldo: novoSaldo })
+                .then(() => {
+                  showMsg('Saldo atualizado');
+                })
+                .catch(err => alert('Erro ao atualizar saldo: ' + err.message));
+            });
+          });
+
+          document.querySelectorAll('.btn-danger').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const id = btn.getAttribute('data-id');
+              if (confirm('Tem certeza que deseja excluir esse usuário?')) {
+                db.collection('users').doc(id).delete()
+                  .then(() => {
+                    showMsg('Usuário excluído');
+                    loadUsers();
+                  })
+                  .catch(err => alert('Erro ao excluir usuário: ' + err.message));
+              }
+            });
+          });
+
+        })
+        .catch(error => {
+          usersTableBody.innerHTML = '<tr><td colspan="6">Erro ao carregar usuários.</td></tr>';
+          console.error(error);
+        });
+    }
+
+  </script>
+
+</body>
+</html>
