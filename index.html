@@ -1,338 +1,143 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Painel Administrativo Belcoin</title>
+  <meta charset="UTF-8">
+  <title>Painel Administrativo - Belcoin</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; }
-
-    /* Menu lateral - escondido antes do login */
-    .sidebar {
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 220px;
-      height: 100vh;
-      background: #111;
-      padding-top: 20px;
-      display: none; /* ESCONDER POR PADRÃO */
-    }
-
-    .sidebar h2 {
-      color: white;
-      text-align: center;
-      margin-bottom: 30px;
-    }
-
-    .sidebar a {
-      display: block;
-      color: white;
-      padding: 12px 20px;
-      text-decoration: none;
-    }
-
-    .sidebar a:hover {
-      background: #333;
-    }
-
-    .main {
-      margin-left: 0;
-      padding: 20px;
-      transition: margin-left 0.3s ease;
-    }
-
-    /* Depois do login, main tem margem para não ficar por trás da sidebar */
-    .main.logged-in {
-      margin-left: 220px;
-    }
-
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      box-shadow: 0 0 10px #ccc;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-    }
-
-    input, select, button {
-      padding: 8px;
-      margin: 5px 0;
-    }
-
-    .btn {
-      background: #3498db;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .btn:hover {
-      background: #2980b9;
-    }
-
-    #logoutBtn {
-      background: #e67e22;
-      margin-top: 10px;
-    }
-
-    .menu-active {
-      background: #2980b9;
-    }
-
-    .title-section {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .title-section h2 {
-      margin: 0;
-    }
-
-    .status-aprovado {
-      color: green;
-      font-weight: bold;
-    }
-
-    .status-pendente {
-      color: orange;
-      font-weight: bold;
-    }
-
-    .status-recusado {
-      color: red;
-      font-weight: bold;
-    }
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #333; color: white; }
+    button { padding: 6px 12px; margin: 4px; }
+    #logoutBtn { float: right; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Painel Administrativo Belcoin</h2>
 
-  <!-- Menu lateral - ESCONDIDO inicialmente -->
-  <div class="sidebar" id="sidebarMenu">
-    <h2>Belcoin Admin</h2>
-    <a href="#" onclick="mostrarAba('usuarios')">Usuários</a>
-    <a href="#" onclick="mostrarAba('investimentos')">Investimentos</a>
-    <a href="#" onclick="mostrarAba('saques')">Saques</a>
-    <a href="#" onclick="mostrarAba('cupons')">Cupons</a>
-    <a href="#" onclick="mostrarAba('logs')">Logs</a>
-    <a href="#" onclick="mostrarAba('depositos')">Depósitos do Dia</a>
-    <a href="#" onclick="mostrarAba('cargos')">Equipe/Cargos</a>
-    <a href="#" id="logoutBtn" onclick="logout()">Sair</a>
-  </div>
-
-  <div class="main" id="mainContent">
-    <!-- Painel administrativo com abas, escondido antes do login -->
-    <div id="painelDiv" class="card hidden">
-      <div class="title-section">
-        <h2>Painel Administrativo Belcoin</h2>
-        <p id="cargoLabel"></p>
-      </div>
-
-      <div id="usuarios" class="aba hidden">Carregando usuários...</div>
-      <div id="investimentos" class="aba hidden">Carregando investimentos...</div>
-      <div id="saques" class="aba hidden">Carregando saques...</div>
-      <div id="cupons" class="aba hidden">Carregando cupons...</div>
-      <div id="logs" class="aba hidden">Carregando logs...</div>
-      <div id="depositos" class="aba hidden">Carregando depósitos...</div>
-      <div id="cargos" class="aba hidden">Carregando equipe...</div>
+    <div id="loginDiv">
+      <p>Email:</p>
+      <input type="email" id="emailInput" value="cjogos3339@gmail.com"><br>
+      <p>Senha:</p>
+      <input type="password" id="passwordInput" value="RBARBA7.0"><br><br>
+      <button onclick="login()">Entrar</button>
     </div>
 
-    <!-- Tela de login visível inicialmente -->
-    <div id="loginDiv" class="card">
-      <h2>Login Admin</h2>
-      <input type="email" id="email" placeholder="E-mail" />
-      <input type="password" id="password" placeholder="Senha" />
-      <button class="btn" onclick="login()">Entrar</button>
-      <p id="msgLogin" style="color:red;"></p>
+    <div id="painelDiv" class="hidden">
+      <p>Bem-vindo, administrador!</p>
+      <button id="logoutBtn" onclick="logout()">Sair</button>
+
+      <h3>Lista de Usuários</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>CPF</th>
+            <th>Telefone</th>
+            <th>Saldo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="userList"></tbody>
+      </table>
     </div>
   </div>
-
-  <!-- Firebase SDK e código JS -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // Configuração Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
       authDomain: "belcoin-92ee8.firebaseapp.com",
       projectId: "belcoin-92ee8",
       storageBucket: "belcoin-92ee8.appspot.com",
       messagingSenderId: "604040948702",
-      appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
-      measurementId: "G-SD1EYWDWPS"
+      appId: "1:604040948702:web:ebfa60dc7a48b131315d8b"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let usuarioLogado = null;
-    let cargoUsuario = null;
+    const loginDiv = document.getElementById("loginDiv");
+    const painelDiv = document.getElementById("painelDiv");
+    const userList = document.getElementById("userList");
 
-    // Elementos do DOM
-    const loginDiv = document.getElementById('loginDiv');
-    const painelDiv = document.getElementById('painelDiv');
-    const cargoLabel = document.getElementById('cargoLabel');
-    const sidebarMenu = document.getElementById('sidebarMenu');
-    const mainContent = document.getElementById('mainContent');
-
-    // Mostrar aba selecionada e carregar conteúdo
-    function mostrarAba(aba) {
-      if (!temPermissaoParaAba(aba)) {
-        alert('Acesso negado para esta aba.');
-        return;
-      }
-      document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
-      document.getElementById(aba).classList.remove('hidden');
-      atualizarMenuAtivo(aba);
-
-      switch (aba) {
-        case 'usuarios': carregarUsuarios(); break;
-        case 'investimentos': carregarInvestimentos(); break;
-        case 'saques': carregarSaques(); break;
-        case 'cupons': carregarCupons(); break;
-        case 'logs': carregarLogs(); break;
-        case 'depositos': carregarDepositos(); break;
-        case 'cargos': carregarEquipe(); break;
-      }
-    }
-
-    function atualizarMenuAtivo(aba) {
-      document.querySelectorAll('.sidebar a').forEach(a => {
-        if (a.getAttribute('onclick') === mostrarAba('${aba}')) {
-          a.classList.add('menu-active');
-        } else {
-          a.classList.remove('menu-active');
-        }
-      });
-    }
-
-    // Função login
     function login() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value.trim();
-      if (!email || !password) {
-        document.getElementById('msgLogin').innerText = 'Preencha e-mail e senha.';
-        return;
-      }
+      const email = document.getElementById("emailInput").value;
+      const password = document.getElementById("passwordInput").value;
+
       auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          usuarioLogado = userCredential.user;
-          verificarCargo(usuarioLogado);
-          document.getElementById('msgLogin').innerText = '';
+        .then(() => {
+          loginDiv.classList.add("hidden");
+          painelDiv.classList.remove("hidden");
+          carregarUsuarios();
         })
         .catch(error => {
-          document.getElementById('msgLogin').innerText = 'Erro: ' + error.message;
+          alert("Erro no login: " + error.message);
         });
     }
 
-    // Função logout
     function logout() {
       auth.signOut().then(() => {
-        usuarioLogado = null;
-        cargoUsuario = null;
-        painelDiv.classList.add('hidden');
-        sidebarMenu.style.display = 'none';
-        mainContent.classList.remove('logged-in');
-        loginDiv.style.display = 'block';
-        document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
-        cargoLabel.innerText = '';
+        painelDiv.classList.add("hidden");
+        loginDiv.classList.remove("hidden");
       });
     }
 
-    // Verificar cargo no Firestore
-    function verificarCargo(user) {
-      db.collection('usuarios').doc(user.uid).get()
-        .then(doc => {
-          if (doc.exists) {
-            cargoUsuario = doc.data().cargo || 'restrito';
-            // Defina seu e-mail master aqui:
-            if (user.email === 'seuemail@dominio.com') {
-              cargoUsuario = 'master';
-            }
-            mostrarPainel();
-          } else {
-            alert('Usuário sem cargo definido. Contate o administrador.');
-            logout();
-          }
-        })
-        .catch(() => {
-          alert('Erro ao buscar cargo do usuário.');
-          logout();
-        });
-    }
-
-    // Mostrar painel após login
-    function mostrarPainel() {
-      loginDiv.style.display = 'none';
-      painelDiv.classList.remove('hidden');
-      sidebarMenu.style.display = 'block';
-      mainContent.classList.add('logged-in');
-      cargoLabel.innerText = Cargo: ${cargoUsuario};
-
-      // Mostrar/ocultar links do menu conforme cargo
-      document.querySelectorAll('.sidebar a').forEach(a => {
-        const aba = a.getAttribute('onclick')?.match(/mostrarAba'(\w+)'/)?.[1];
-        if (!aba) return;
-        if (a.id === 'logoutBtn') return;
-
-        if (temPermissaoParaAba(aba)) {
-          a.style.display = 'block';
-        } else {
-          a.style.display = 'none';
-        }
-      });
-
-      mostrarAba('usuarios'); // Aba padrão após login
-    }
-
-    // Verifica permissão para aba por cargo
-    function temPermissaoParaAba(aba) {
-      const permissoes = {
-        usuarios: ['master', 'admin', 'suporte'],
-        investimentos: ['master', 'admin', 'investimentos'],
-        saques: ['master', 'admin', 'financeiro'],
-        cupons: ['master', 'admin'],
-        logs: ['master', 'admin', 'logs'],
-        depositos: ['master', 'admin', 'financeiro'],
-        cargos: ['master']
-      };
-      return permissoes[aba]?.includes(cargoUsuario);
-    }
-
-    // Função para carregar usuários (exemplo)
     function carregarUsuarios() {
-      const div = document.getElementById('usuarios');
-      div.innerHTML = '<h3>Carregando usuários...</h3>';
-      db.collection('usuarios').get().then(snapshot => {
-        if (snapshot.empty) {
-          div.innerHTML = '<p>Nenhum usuário encontrado.</p>';
-          return;
-        }
-        let html = '<table><thead><tr><th>Nome</th><th>Email</th><th>CPF</th><th>Telefone</th><th>Saldo</th><th>Cargo</th><th>Ações</th></tr></thead><tbody>';
-        snapshot.forEach(doc => {
-          const u = doc.data();
-          html += `<tr>
-            <td><
+      userList.innerHTML = "";
+
+      db.collection("usuarios").get().then(querySnapshot => {
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+            <td>${data.nome || ""}</td>
+            <td>${data.email || ""}</td>
+            <td>${data.cpf || ""}</td>
+            <td>${data.telefone || ""}</td>
+            <td>R$ ${data.saldo != null ? data.saldo.toFixed(2) : "0.00"}</td>
+            <td>
+              <button onclick="alterarSaldo('${doc.id}', true)">+ R$10</button>
+              <button onclick="alterarSaldo('${doc.id}', false)">- R$10</button>
+            </td>
+          `;
+          userList.appendChild(tr);
+        });
+      });
+    }
+
+    function alterarSaldo(userId, aumentar) {
+      const userRef = db.collection("usuarios").doc(userId);
+      db.runTransaction(async (t) => {
+        const doc = await t.get(userRef);
+        if (!doc.exists) return;
+
+        const saldoAtual = doc.data().saldo || 0;
+        const novoSaldo = aumentar ? saldoAtual + 10 : saldoAtual - 10;
+
+        t.update(userRef, { saldo: novoSaldo });
+      }).then(() => {
+        carregarUsuarios();
+      });
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user && user.email === "cjogos3339@gmail.com") {
+        loginDiv.classList.add("hidden");
+        painelDiv.classList.remove("hidden");
+        carregarUsuarios();
+      } else {
+        auth.signOut();
+      }
+    });
+  </script>
+</body>
+</html>
