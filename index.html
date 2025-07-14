@@ -8,6 +8,7 @@
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; }
 
+    /* Menu lateral - escondido antes do login */
     .sidebar {
       position: fixed;
       left: 0;
@@ -16,6 +17,7 @@
       height: 100vh;
       background: #111;
       padding-top: 20px;
+      display: none; /* ESCONDER POR PADRÃO */
     }
 
     .sidebar h2 {
@@ -36,8 +38,14 @@
     }
 
     .main {
-      margin-left: 220px;
+      margin-left: 0;
       padding: 20px;
+      transition: margin-left 0.3s ease;
+    }
+
+    /* Depois do login, main tem margem para não ficar por trás da sidebar */
+    .main.logged-in {
+      margin-left: 220px;
     }
 
     .card {
@@ -119,7 +127,8 @@
 </head>
 <body>
 
-  <div class="sidebar">
+  <!-- Menu lateral - ESCONDIDO inicialmente -->
+  <div class="sidebar" id="sidebarMenu">
     <h2>Belcoin Admin</h2>
     <a href="#" onclick="mostrarAba('usuarios')">Usuários</a>
     <a href="#" onclick="mostrarAba('investimentos')">Investimentos</a>
@@ -131,14 +140,14 @@
     <a href="#" id="logoutBtn" onclick="logout()">Sair</a>
   </div>
 
-  <div class="main">
-    <div id="painelDiv" class="card">
+  <div class="main" id="mainContent">
+    <!-- Painel administrativo com abas, escondido antes do login -->
+    <div id="painelDiv" class="card hidden">
       <div class="title-section">
         <h2>Painel Administrativo Belcoin</h2>
         <p id="cargoLabel"></p>
       </div>
 
-      <!-- AQUI VÃO FICAR OS CONTEÚDOS DAS ABAS (que vou mandar na Parte 2) -->
       <div id="usuarios" class="aba hidden">Carregando usuários...</div>
       <div id="investimentos" class="aba hidden">Carregando investimentos...</div>
       <div id="saques" class="aba hidden">Carregando saques...</div>
@@ -148,6 +157,7 @@
       <div id="cargos" class="aba hidden">Carregando equipe...</div>
     </div>
 
+    <!-- Tela de login visível inicialmente -->
     <div id="loginDiv" class="card">
       <h2>Login Admin</h2>
       <input type="email" id="email" placeholder="E-mail" />
@@ -156,412 +166,173 @@
       <p id="msgLogin" style="color:red;"></p>
     </div>
   </div>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-<script>
-  // Configuração do Firebase (já com seu projeto Belcoin)
-  const firebaseConfig = {
-    apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
-    authDomain: "belcoin-92ee8.firebaseapp.com",
-    projectId: "belcoin-92ee8",
-    storageBucket: "belcoin-92ee8.appspot.com",
-    messagingSenderId: "604040948702",
-    appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
-    measurementId: "G-SD1EYWDWPS"
-  };
+  <!-- Firebase SDK e código JS -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  // Inicializa Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  <script>
+    // Configuração Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
+      authDomain: "belcoin-92ee8.firebaseapp.com",
+      projectId: "belcoin-92ee8",
+      storageBucket: "belcoin-92ee8.appspot.com",
+      messagingSenderId: "604040948702",
+      appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
+      measurementId: "G-SD1EYWDWPS"
+    };
 
-  // Variáveis globais
-  let usuarioLogado = null;
-  let cargoUsuario = null;
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-  // Elementos
-  const loginDiv = document.getElementById('loginDiv');
-  const painelDiv = document.getElementById('painelDiv');
-  const cargoLabel = document.getElementById('cargoLabel');
+    let usuarioLogado = null;
+    let cargoUsuario = null;
 
-  // Mostrar aba do menu
-  function mostrarAba(aba) {
-    if (!temPermissaoParaAba(aba)) {
-      alert('Acesso negado para esta aba.');
-      return;
-    }
-    document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
-    document.getElementById(aba).classList.remove('hidden');
-    atualizarMenuAtivo(aba);
+    // Elementos do DOM
+    const loginDiv = document.getElementById('loginDiv');
+    const painelDiv = document.getElementById('painelDiv');
+    const cargoLabel = document.getElementById('cargoLabel');
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    const mainContent = document.getElementById('mainContent');
 
-    // Carregar dados específicos por aba
-    switch(aba) {
-      case 'usuarios': carregarUsuarios(); break;
-      case 'investimentos': carregarInvestimentos(); break;
-      case 'saques': carregarSaques(); break;
-      case 'cupons': carregarCupons(); break;
-      case 'logs': carregarLogs(); break;
-      case 'depositos': carregarDepositos(); break;
-      case 'cargos': carregarEquipe(); break;
-    }
-  }
-
-  function atualizarMenuAtivo(aba) {
-    document.querySelectorAll('.sidebar a').forEach(a => {
-      if (a.getAttribute('onclick') === mostrarAba('${aba}')) {
-        a.classList.add('menu-active');
-      } else {
-        a.classList.remove('menu-active');
+    // Mostrar aba selecionada e carregar conteúdo
+    function mostrarAba(aba) {
+      if (!temPermissaoParaAba(aba)) {
+        alert('Acesso negado para esta aba.');
+        return;
       }
-    });
-  }
-
-  // Login
-  function login() {
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-    if (!email || !password) {
-      document.getElementById('msgLogin').innerText = 'Preencha e-mail e senha.';
-      return;
-    }
-    auth.signInWithEmailAndPassword(email, password)
-      .then(userCredential => {
-        usuarioLogado = userCredential.user;
-        verificarCargo(usuarioLogado);
-        document.getElementById('msgLogin').innerText = '';
-      })
-      .catch(error => {
-        document.getElementById('msgLogin').innerText = 'Erro: ' + error.message;
-      });
-  }
-
-  // Logout
-  function logout() {
-    auth.signOut().then(() => {
-      usuarioLogado = null;
-      cargoUsuario = null;
-      painelDiv.style.display = 'none';
-      loginDiv.style.display = 'block';
       document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
-      cargoLabel.innerText = '';
-    });
-  }
+      document.getElementById(aba).classList.remove('hidden');
+      atualizarMenuAtivo(aba);
 
-  // Verifica o cargo do usuário no Firestore e configura permissões
-  function verificarCargo(user) {
-    db.collection('usuarios').doc(user.uid).get()
-      .then(doc => {
-        if (doc.exists) {
-          cargoUsuario = doc.data().cargo || 'restrito';
-          // Força master se email for seu (troque pelo seu email)
-          if (user.email === 'seuemail@dominio.com') {
-            cargoUsuario = 'master';
+      switch (aba) {
+        case 'usuarios': carregarUsuarios(); break;
+        case 'investimentos': carregarInvestimentos(); break;
+        case 'saques': carregarSaques(); break;
+        case 'cupons': carregarCupons(); break;
+        case 'logs': carregarLogs(); break;
+        case 'depositos': carregarDepositos(); break;
+        case 'cargos': carregarEquipe(); break;
+      }
+    }
+
+    function atualizarMenuAtivo(aba) {
+      document.querySelectorAll('.sidebar a').forEach(a => {
+        if (a.getAttribute('onclick') === mostrarAba('${aba}')) {
+          a.classList.add('menu-active');
+        } else {
+          a.classList.remove('menu-active');
+        }
+      });
+    }
+
+    // Função login
+    function login() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      if (!email || !password) {
+        document.getElementById('msgLogin').innerText = 'Preencha e-mail e senha.';
+        return;
+      }
+      auth.signInWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          usuarioLogado = userCredential.user;
+          verificarCargo(usuarioLogado);
+          document.getElementById('msgLogin').innerText = '';
+        })
+        .catch(error => {
+          document.getElementById('msgLogin').innerText = 'Erro: ' + error.message;
+        });
+    }
+
+    // Função logout
+    function logout() {
+      auth.signOut().then(() => {
+        usuarioLogado = null;
+        cargoUsuario = null;
+        painelDiv.classList.add('hidden');
+        sidebarMenu.style.display = 'none';
+        mainContent.classList.remove('logged-in');
+        loginDiv.style.display = 'block';
+        document.querySelectorAll('.aba').forEach(div => div.classList.add('hidden'));
+        cargoLabel.innerText = '';
+      });
+    }
+
+    // Verificar cargo no Firestore
+    function verificarCargo(user) {
+      db.collection('usuarios').doc(user.uid).get()
+        .then(doc => {
+          if (doc.exists) {
+            cargoUsuario = doc.data().cargo || 'restrito';
+            // Defina seu e-mail master aqui:
+            if (user.email === 'seuemail@dominio.com') {
+              cargoUsuario = 'master';
+            }
+            mostrarPainel();
+          } else {
+            alert('Usuário sem cargo definido. Contate o administrador.');
+            logout();
           }
-          mostrarPainel();
-        } else {
-          alert('Usuário sem cargo definido. Contate o administrador.');
+        })
+        .catch(() => {
+          alert('Erro ao buscar cargo do usuário.');
           logout();
-        }
-      })
-      .catch(() => {
-        alert('Erro ao buscar cargo do usuário.');
-        logout();
-      });
-  }
-
-  // Mostra painel e menu conforme cargo
-  function mostrarPainel() {
-    loginDiv.style.display = 'none';
-    painelDiv.style.display = 'block';
-    cargoLabel.innerText = Cargo: ${cargoUsuario};
-
-    // Mostrar/ocultar links do menu conforme cargo
-    document.querySelectorAll('.sidebar a').forEach(a => {
-      const aba = a.getAttribute('onclick')?.match(/mostrarAba'(\w+)'/)?.[1];
-      if (!aba) return;
-      if (aba === 'logoutBtn') return;
-
-      if (temPermissaoParaAba(aba)) {
-        a.style.display = 'block';
-      } else {
-        a.style.display = 'none';
-      }
-    });
-
-    mostrarAba('usuarios'); // Aba padrão
-  }
-
-  // Função que define quais cargos podem acessar qual aba
-  function temPermissaoParaAba(aba) {
-    const permissoes = {
-      usuarios: ['master', 'admin', 'suporte'],
-      investimentos: ['master', 'admin', 'investimentos'],
-      saques: ['master', 'admin', 'financeiro'],
-      cupons: ['master', 'admin'],
-      logs: ['master', 'admin', 'logs'],
-      depositos: ['master', 'admin', 'financeiro'],
-      cargos: ['master']
-    };
-    return permissoes[aba]?.includes(cargoUsuario);
-  }
-
-  // ========== CARREGAR DADOS DAS ABAS ==========
-
-  // Usuários
-  function carregarUsuarios() {
-    const div = document.getElementById('usuarios');
-    div.innerHTML = '<h3>Carregando usuários...</h3>';
-    db.collection('usuarios').get().then(snapshot => {
-      if (snapshot.empty) {
-        div.innerHTML = '<p>Nenhum usuário encontrado.</p>';
-        return;
-      }
-      let html = '<table><thead><tr><th>Nome</th><th>Email</th><th>CPF</th><th>Telefone</th><th>Saldo</th><th>Cargo</th><th>Ações</th></tr></thead><tbody>';
-      snapshot.forEach(doc => {
-        const u = doc.data();
-        html += `<tr>
-          <td><input type="text" value="${u.nome || ''}" onchange="editarUsuario('${doc.id}', 'nome', this.value)" /></td>
-          <td><input type="email" value="${u.email || ''}" onchange="editarUsuario('${doc.id}', 'email', this.value)" /></td>
-          <td><input type="text" value="${u.cpf || ''}" onchange="editarUsuario('${doc.id}', 'cpf', this.value)" /></td>
-          <td><input type="text" value="${u.telefone || ''}" onchange="editarUsuario('${doc.id}', 'telefone', this.value)" /></td>
-          <td><input type="number" step="0.01" value="${u.saldo || 0}" ${cargoUsuario === 'master' || cargoUsuario === 'admin' ? '' : 'disabled'} onchange="editarUsuario('${doc.id}', 'saldo', parseFloat(this.value))" /></td>
-          <td>${u.cargo || 'restrito'}</td>
-          <td><button class="btn" onclick="excluirUsuario('${doc.id}')">Excluir</button></td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      div.innerHTML = html;
-    }).catch(err => {
-      div.innerHTML = '<p>Erro ao carregar usuários: ' + err.message + '</p>';
-    });
-  }
-
-  // Editar usuário
-  function editarUsuario(id, campo, valor) {
-    if ((campo === 'saldo') && !(cargoUsuario === 'master' || cargoUsuario === 'admin')) {
-      alert('Você não tem permissão para editar saldo.');
-      carregarUsuarios();
-      return;
+        });
     }
-    const dados = {};
-    dados[campo] = valor;
-    db.collection('usuarios').doc(id).update(dados)
-      .then(() => {
-        if (campo === 'saldo') alert('Saldo atualizado com sucesso.');
-      })
-      .catch(err => {
-        alert('Erro ao atualizar: ' + err.message);
-      });
-  }
 
-  // Excluir usuário
-  function excluirUsuario(id) {
-    if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
-    db.collection('usuarios').doc(id).delete()
-      .then(() => {
-        alert('Usuário excluído.');
-        carregarUsuarios();
-      })
-      .catch(err => {
-        alert('Erro ao excluir usuário: ' + err.message);
-      });
-  }
+    // Mostrar painel após login
+    function mostrarPainel() {
+      loginDiv.style.display = 'none';
+      painelDiv.classList.remove('hidden');
+      sidebarMenu.style.display = 'block';
+      mainContent.classList.add('logged-in');
+      cargoLabel.innerText = Cargo: ${cargoUsuario};
 
-  // Investimentos
-  function carregarInvestimentos() {
-    const div = document.getElementById('investimentos');
-    div.innerHTML = '<h3>Carregando investimentos...</h3>';
-    db.collection('investimentos').get().then(snapshot => {
-      if (snapshot.empty) {
-        div.innerHTML = '<p>Nenhum investimento encontrado.</p>';
-        return;
-      }
-      let html = '<table><thead><tr><th>Usuário</th><th>Valor</th><th>Prazo (dias)</th><th>Status</th><th>Data Inicial</th><th>Data Final</th><th>Ações</th></tr></thead><tbody>';
-      snapshot.forEach(doc => {
-        const i = doc.data();
-        html += `<tr>
-          <td>${i.usuarioNome || i.usuarioId || 'N/D'}</td>
-          <td><input type="number" step="0.01" value="${i.valor || 0}" onchange="editarInvestimento('${doc.id}', 'valor', parseFloat(this.value))" /></td>
-          <td><input type="number" value="${i.prazo || 0}" onchange="editarInvestimento('${doc.id}', 'prazo', parseInt(this.value))" /></td>
-          <td>${i.status || 'pendente'}</td>
-          <td>${i.dataInicial ? i.dataInicial.toDate().toLocaleDateString() : ''}</td>
-          <td>${i.dataFinal ? i.dataFinal.toDate().toLocaleDateString() : ''}</td>
-          <td><button class="btn" onclick="excluirInvestimento('${doc.id}')">Excluir</button></td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      div.innerHTML = html;
-    }).catch(err => {
-      div.innerHTML = '<p>Erro ao carregar investimentos: ' + err.message + '</p>';
-    });
-  }
+      // Mostrar/ocultar links do menu conforme cargo
+      document.querySelectorAll('.sidebar a').forEach(a => {
+        const aba = a.getAttribute('onclick')?.match(/mostrarAba'(\w+)'/)?.[1];
+        if (!aba) return;
+        if (a.id === 'logoutBtn') return;
 
-  // Editar investimento
-  function editarInvestimento(id, campo, valor) {
-    const dados = {};
-    dados[campo] = valor;
-    db.collection('investimentos').doc(id).update(dados)
-      .then(() => {})
-      .catch(err => alert('Erro ao atualizar investimento: ' + err.message));
-  }
-
-  // Excluir investimento
-  function excluirInvestimento(id) {
-    if (!confirm('Tem certeza que deseja excluir este investimento?')) return;
-    db.collection('investimentos').doc(id).delete()
-      .then(() => {
-        alert('Investimento excluído.');
-        carregarInvestimentos();
-      })
-      .catch(err => alert('Erro ao excluir investimento: ' + err.message));
-  }
-
-  // Saques
-  function carregarSaques() {
-    const div = document.getElementById('saques');
-    div.innerHTML = '<h3>Carregando saques...</h3>';
-    db.collection('saques').get().then(snapshot => {
-      if (snapshot.empty) {
-        div.innerHTML = '<p>Nenhum saque encontrado.</p>';
-        return;
-      }
-      let html = '<table><thead><tr><th>Usuário</th><th>Valor</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead><tbody>';
-      snapshot.forEach(doc => {
-        const s = doc.data();
-        let statusClass = '';
-        if (s.status === 'aprovado') statusClass = 'status-aprovado';
-        else if (s.status === 'pendente') statusClass = 'status-pendente';
-        else if (s.status === 'recusado') statusClass = 'status-recusado';
-        html += `<tr>
-          <td>${s.usuarioId || 'N/D'}</td>
-          <td>${s.valor || 0}</td>
-          <td class="${statusClass}">${s.status || 'pendente'}</td>
-          <td>${s.data ? s.data.toDate().toLocaleDateString() : ''}</td>
-          <td>`;
-        if ((cargoUsuario === 'master' || cargoUsuario === 'admin') && s.status === 'pendente') {
-          html += `<button class="btn" onclick="aprovarSaque('${doc.id}')">Aprovar</button>
-                   <button class="btn" onclick="recusarSaque('${doc.id}')">Recusar</button>`;
+        if (temPermissaoParaAba(aba)) {
+          a.style.display = 'block';
         } else {
-          html += '-';
+          a.style.display = 'none';
         }
-        html += '</td></tr>';
       });
-      html += '</tbody></table>';
-      div.innerHTML = html;
-    }).catch(err => {
-      div.innerHTML = '<p>Erro ao carregar saques: ' + err.message + '</p>';
-    });
-  }
 
-  // Aprovar saque
-  function aprovarSaque(id) {
-    if (!confirm('Aprovar saque?')) return;
-    db.collection('saques').doc(id).update({status: 'aprovado'})
-      .then(() => {
-        alert('Saque aprovado.');
-        carregarSaques();
-      })
-      .catch(err => alert('Erro ao aprovar saque: ' + err.message));
-  }
-
-  // Recusar saque
-  function recusarSaque(id) {
-    if (!confirm('Recusar saque?')) return;
-    db.collection('saques').doc(id).update({status: 'recusado'})
-      .then(() => {
-        alert('Saque recusado.');
-        carregarSaques();
-      })
-      .catch(err => alert('Erro ao recusar saque: ' + err.message));
-  }
-
-  // Cupons
-  function carregarCupons() {
-    const div = document.getElementById('cupons');
-    div.innerHTML = '<h3>Carregando cupons...</h3>';
-    db.collection('cupons').get().then(snapshot => {
-      if (snapshot.empty) {
-        div.innerHTML = '<p>Nenhum cupom encontrado.</p>';
-        return;
-      }
-      let html = <button class="btn" onclick="mostrarFormularioCupom()">Novo Cupom</button>;
-      html += '<table><thead><tr><th>Código</th><th>Valor</th><th>Ativo</th><th>Usado Por</th><th>Ações</th></tr></thead><tbody>';
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        html += `<tr>
-          <td>${c.codigo || ''}</td>
-          <td>${c.valor || 0}</td>
-          <td>${c.ativo ? 'Sim' : 'Não'}</td>
-          <td>${c.usadoPor || ''}</td>
-          <td>
-            <button class="btn" onclick="editarCupom('${doc.id}')">Editar</button>
-            <button class="btn" onclick="excluirCupom('${doc.id}')">Excluir</button>
-          </td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      html += `<div id="formCupom" class="hidden">
-        <h4 id="tituloFormCupom">Novo Cupom</h4>
-        <input type="text" id="codigoCupom" placeholder="Código" />
-        <input type="number" step="0.01" id="valorCupom" placeholder="Valor" />
-        <label><input type="checkbox" id="ativoCupom" checked /> Ativo</label><br/>
-        <button class="btn" onclick="salvarCupom()">Salvar</button>
-        <button class="btn" onclick="cancelarFormularioCupom()">Cancelar</button>
-      </div>`;
-      div.innerHTML = html;
-    }).catch(err => {
-      div.innerHTML = '<p>Erro ao carregar cupons: ' + err.message + '</p>';
-    });
-  }
-
-  let cupomEditandoId = null;
-
-  function mostrarFormularioCupom() {
-    cupomEditandoId = null;
-    document.getElementById('formCupom').classList.remove('hidden');
-    document.getElementById('tituloFormCupom').innerText = 'Novo Cupom';
-    document.getElementById('codigoCupom').value = '';
-    document.getElementById('valorCupom').value = '';
-    document.getElementById('ativoCupom').checked = true;
-  }
-
-  function cancelarFormularioCupom() {
-    document.getElementById('formCupom').classList.add('hidden');
-  }
-
-  function editarCupom(id) {
-    cupomEditandoId = id;
-    db.collection('cupons').doc(id).get().then(doc => {
-      if (doc.exists) {
-        const c = doc.data();
-        document.getElementById('formCupom').classList.remove('hidden');
-        document.getElementById('tituloFormCupom').innerText = 'Editar Cupom';
-        document.getElementById('codigoCupom').value = c.codigo || '';
-        document.getElementById('valorCupom').value = c.valor || 0;
-        document.getElementById('ativoCupom').checked = c.ativo || false;
-      }
-    });
-  }
-
-  function salvarCupom() {
-    const codigo = document.getElementById('codigoCupom').value.trim();
-    const valor = parseFloat(document.getElementById('valorCupom').value);
-    const ativo = document.getElementById('ativoCupom').checked;
-
-    if (!codigo || isNaN(valor)) {
-      alert('Preencha código e valor válidos.');
-      return;
+      mostrarAba('usuarios'); // Aba padrão após login
     }
 
-    const dados = {
-      codigo,
-      valor,
-      ativo,
-      usadoPor: '',
-      dataCriacao: firebase.firestore.FieldValue.serverTimestamp()
-    };
+    // Verifica permissão para aba por cargo
+    function temPermissaoParaAba(aba) {
+      const permissoes = {
+        usuarios: ['master', 'admin', 'suporte'],
+        investimentos: ['master', 'admin', 'investimentos'],
+        saques: ['master', 'admin', 'financeiro'],
+        cupons: ['master', 'admin'],
+        logs: ['master', 'admin', 'logs'],
+        depositos: ['master', 'admin', 'financeiro'],
+        cargos: ['master']
+      };
+      return permissoes[aba]?.includes(cargoUsuario);
+    }
 
-    if (cupomEditandoId) {
-      db.collection('cupons').doc(cupomEditandoId).update(dados
+    // Função para carregar usuários (exemplo)
+    function carregarUsuarios() {
+      const div = document.getElementById('usuarios');
+      div.innerHTML = '<h3>Carregando usuários...</h3>';
+      db.collection('usuarios').get().then(snapshot => {
+        if (snapshot.empty) {
+          div.innerHTML = '<p>Nenhum usuário encontrado.</p>';
+          return;
+        }
+        let html = '<table><thead><tr><th>Nome</th><th>Email</th><th>CPF</th><th>Telefone</th><th>Saldo</th><th>Cargo</th><th>Ações</th></tr></thead><tbody>';
+        snapshot.forEach(doc => {
+          const u = doc.data();
+          html += `<tr>
+            <td><
