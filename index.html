@@ -1,188 +1,46 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Painel Administrativo Belcoin</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f5f7fa;
-      display: flex;
-      height: 100vh;
-    }
-    nav {
-      width: 250px;
-      background: #111827;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      box-sizing: border-box;
-    }
-    nav h2 {
-      margin-bottom: 2rem;
-      font-weight: 700;
-      font-size: 1.4rem;
-      text-align: center;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-bottom: 1rem;
-      padding: 0.6rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.3s;
-    }
-    nav a:hover, nav a.active {
-      background-color: #2563eb;
-    }
-    main {
-      flex: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-    }
-    header {
-      background-color: #1f2937;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      font-weight: 700;
-      font-size: 1.8rem;
-      user-select: none;
-    }
-    .card {
-      background: white;
-      padding: 1rem 1.5rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
-      margin-bottom: 1.5rem;
-    }
-    /* Login */
-    #login-screen {
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f5f7fa;
-    }
-    #login-container {
-      background: white;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      max-width: 350px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    #login-container h2 {
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-    #login-container input {
-      width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.7rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      font-size: 1rem;
-    }
-    #login-container button {
-      width: 100%;
-      padding: 0.7rem;
-      border-radius: 5px;
-      border: none;
-      background-color: #2563eb;
-      color: white;
-      font-weight: 700;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    #login-container button:hover {
-      background-color: #1e40af;
-    }
-    #error-message {
-      color: #ef4444;
-      text-align: center;
-      margin-bottom: 1rem;
-      min-height: 18px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="main.js" defer></script>
 </head>
 <body>
+  <div id="app">
+    <!-- TELA DE LOGIN -->
+    <div class="login-screen" id="login-screen">
+      <h2>Login Administrador</h2>
+      <input type="email" id="email" placeholder="E-mail">
+      <input type="password" id="password" placeholder="Senha">
+      <button onclick="login()">Entrar</button>
+      <p id="login-status"></p>
+    </div>
 
-<!-- Login -->
-<div id="login-screen">
-  <div id="login-container">
-    <h2>Login Admin</h2>
-    <div id="error-message"></div>
-    <input type="email" id="email" placeholder="E-mail" required />
-    <input type="password" id="password" placeholder="Senha" required />
-    <button onclick="login()">Entrar</button>
+    <!-- DASHBOARD PRINCIPAL -->
+    <div class="dashboard hidden" id="dashboard">
+      <nav>
+        <h3>Painel Belcoin</h3>
+        <ul>
+          <li onclick="showSection('dashboard')">🏠 Dashboard</li>
+          <li onclick="showSection('usuarios')">👥 Usuários</li>
+          <li onclick="showSection('investimentos')">💼 Investimentos</li>
+          <li onclick="showSection('cupons')">🎟️ Cupons</li>
+          <li onclick="showSection('logs')">📜 Logs</li>
+          <li onclick="showSection('cargos')">🛡️ Cargos</li>
+          <li onclick="logout()">🚪 Sair</li>
+        </ul>
+      </nav>
+      <main id="main-content">
+        <section id="section-dashboard">Carregando dashboard...</section>
+        <section id="section-usuarios" class="hidden">Carregando usuários...</section>
+        <section id="section-investimentos" class="hidden">Carregando investimentos...</section>
+        <section id="section-cupons" class="hidden">Carregando cupons...</section>
+        <section id="section-logs" class="hidden">Carregando logs...</section>
+        <section id="section-cargos" class="hidden">Carregando cargos...</section>
+      </main>
+    </div>
   </div>
-</div>
-
-<!-- Painel -->
-<div id="panel" style="display:none; width: 100%; height: 100vh; flex-direction: row;">
-  <!-- Menu lateral e conteúdo aqui... (para simplificar, foco no login e erro corrigido) -->
-</div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
-    authDomain: "belcoin-92ee8.firebaseapp.com",
-    projectId: "belcoin-92ee8",
-    storageBucket: "belcoin-92ee8.appspot.com",
-    messagingSenderId: "604040948702",
-    appId: "1:604040948702:web:ebxxxxxx"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  const MASTER_EMAIL = "cjogos3339@gmail.com";
-  const MASTER_PASSWORD = "rbarba9798";
-
-  const loginScreen = document.getElementById('login-screen');
-  const panel = document.getElementById('panel');
-  const errorMessage = document.getElementById('error-message');
-
-  function login() {
-    errorMessage.textContent = "";
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if(email !== MASTER_EMAIL) {
-      errorMessage.textContent = "Usuário não autorizado.";
-      return;
-    }
-    if(password !== MASTER_PASSWORD) {
-      errorMessage.textContent = "Senha incorreta.";
-      return;
-    }
-
-    auth.signInAnonymously()
-      .then(() => {
-        loginScreen.style.display = 'none';
-        panel.style.display = 'flex';
-        // Aqui você carrega o restante do painel, dashboard etc
-      })
-      .catch(e => {
-        errorMessage.textContent = "Erro ao autenticar: " + e.message;
-      });
-  }
-</script>
-
 </body>
 </html>
