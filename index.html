@@ -1,38 +1,40 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Painel Administrativo - Belcoin</title>
+  <meta charset="UTF-8" />
+  <title>Painel Administrativo - BeefundApp</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-    .hidden { display: none; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; }
+    h2 { text-align: center; }
+    #painelDiv { display: none; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #333; color: white; }
-    button { padding: 6px 12px; margin: 4px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #333; color: white; }
+    button { margin: 5px; padding: 6px 12px; cursor: pointer; }
     #logoutBtn { float: right; }
+    input { width: 100%; padding: 8px; margin: 5px 0 15px 0; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Painel Administrativo Belcoin</h2>
+    <h2>Painel Administrativo BeefundApp</h2>
 
     <div id="loginDiv">
-      <p>Email:</p>
-      <input type="email" id="emailInput" value="cjogos3339@gmail.com"><br>
-      <p>Senha:</p>
-      <input type="password" id="passwordInput" value="RBARBA7.0"><br><br>
+      <label for="emailInput">Email:</label><br />
+      <input type="email" id="emailInput" value="cjogos3339@gmail.com" /><br />
+
+      <label for="passwordInput">Senha:</label><br />
+      <input type="password" id="passwordInput" value="rbarbat7.." /><br />
+
       <button onclick="login()">Entrar</button>
     </div>
 
-    <div id="painelDiv" class="hidden">
-      <p>Bem-vindo, administrador!</p>
+    <div id="painelDiv">
       <button id="logoutBtn" onclick="logout()">Sair</button>
-
       <h3>Lista de Usuários</h3>
       <table>
         <thead>
@@ -52,58 +54,63 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
-      authDomain: "belcoin-92ee8.firebaseapp.com",
-      projectId: "belcoin-92ee8",
-      storageBucket: "belcoin-92ee8.appspot.com",
-      messagingSenderId: "604040948702",
-      appId: "1:604040948702:web:ebfa60dc7a48b131315d8b"
+      apiKey: "AIzaSyCfmFkLcw5RXPro2vRtqPVrxqOIu9GQ_XM",
+      authDomain: "beefundapp-982d2.firebaseapp.com",
+      databaseURL: "https://beefundapp-982d2-default-rtdb.firebaseio.com",
+      projectId: "beefundapp-982d2",
+      storageBucket: "beefundapp-982d2.firebasestorage.app",
+      messagingSenderId: "311716200535",
+      appId: "1:311716200535:web:ea31b9e87ffa48cdad6312",
+      measurementId: "G-FGG7YH3FR3"
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const loginDiv = document.getElementById("loginDiv");
-    const painelDiv = document.getElementById("painelDiv");
-    const userList = document.getElementById("userList");
+    const loginDiv = document.getElementById('loginDiv');
+    const painelDiv = document.getElementById('painelDiv');
+    const userList = document.getElementById('userList');
 
     function login() {
-      const email = document.getElementById("emailInput").value;
-      const password = document.getElementById("passwordInput").value;
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value;
 
       auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-          loginDiv.classList.add("hidden");
-          painelDiv.classList.remove("hidden");
+          if(email.toLowerCase() !== 'cjogos3339@gmail.com') {
+            alert('Acesso negado: usuário não autorizado.');
+            auth.signOut();
+            return;
+          }
+          loginDiv.style.display = 'none';
+          painelDiv.style.display = 'block';
           carregarUsuarios();
         })
         .catch(error => {
-          alert("Erro no login: " + error.message);
+          alert('Erro no login: ' + error.message);
         });
     }
 
     function logout() {
       auth.signOut().then(() => {
-        painelDiv.classList.add("hidden");
-        loginDiv.classList.remove("hidden");
+        painelDiv.style.display = 'none';
+        loginDiv.style.display = 'block';
       });
     }
 
     function carregarUsuarios() {
-      userList.innerHTML = "";
-
-      db.collection("usuarios").get().then(querySnapshot => {
-        querySnapshot.forEach(doc => {
+      userList.innerHTML = '';
+      db.collection('usuarios').get().then(snapshot => {
+        snapshot.forEach(doc => {
           const data = doc.data();
-          const tr = document.createElement("tr");
-
+          const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${data.nome || ""}</td>
-            <td>${data.email || ""}</td>
-            <td>${data.cpf || ""}</td>
-            <td>${data.telefone || ""}</td>
-            <td>R$ ${data.saldo != null ? data.saldo.toFixed(2) : "0.00"}</td>
+            <td>${data.nome || ''}</td>
+            <td>${data.email || ''}</td>
+            <td>${data.cpf || ''}</td>
+            <td>${data.telefone || ''}</td>
+            <td>R$ ${data.saldo != null ? data.saldo.toFixed(2) : '0.00'}</td>
             <td>
               <button onclick="alterarSaldo('${doc.id}', true)">+ R$10</button>
               <button onclick="alterarSaldo('${doc.id}', false)">- R$10</button>
@@ -115,27 +122,30 @@
     }
 
     function alterarSaldo(userId, aumentar) {
-      const userRef = db.collection("usuarios").doc(userId);
-      db.runTransaction(async (t) => {
-        const doc = await t.get(userRef);
-        if (!doc.exists) return;
-
-        const saldoAtual = doc.data().saldo || 0;
-        const novoSaldo = aumentar ? saldoAtual + 10 : saldoAtual - 10;
-
-        t.update(userRef, { saldo: novoSaldo });
+      const userRef = db.collection('usuarios').doc(userId);
+      db.runTransaction(transaction => {
+        return transaction.get(userRef).then(doc => {
+          if (!doc.exists) throw "Documento não encontrado!";
+          let saldoAtual = doc.data().saldo || 0;
+          let novoSaldo = aumentar ? saldoAtual + 10 : saldoAtual - 10;
+          if (novoSaldo < 0) novoSaldo = 0;
+          transaction.update(userRef, { saldo: novoSaldo });
+        });
       }).then(() => {
         carregarUsuarios();
+      }).catch(err => {
+        alert('Erro ao alterar saldo: ' + err);
       });
     }
 
     auth.onAuthStateChanged(user => {
-      if (user && user.email === "cjogos3339@gmail.com") {
-        loginDiv.classList.add("hidden");
-        painelDiv.classList.remove("hidden");
+      if(user && user.email.toLowerCase() === 'cjogos3339@gmail.com') {
+        loginDiv.style.display = 'none';
+        painelDiv.style.display = 'block';
         carregarUsuarios();
       } else {
-        auth.signOut();
+        painelDiv.style.display = 'none';
+        loginDiv.style.display = 'block';
       }
     });
   </script>
