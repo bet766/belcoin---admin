@@ -1,430 +1,232 @@
+<!-- arquivo: painel.html -->
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <title>Painel Administrativo Belcoin</title>
+  <meta charset="UTF-8">
+  <title>Painel Belcoin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0; background: #f0f2f5;
-    }
-    .login-container, .panel-container {
-      max-width: 900px;
-      margin: 50px auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-bottom: 20px;
-      color: #222;
-    }
-    input[type=email], input[type=password] {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    nav {
-      margin-bottom: 20px;
-      border-bottom: 2px solid #007bff;
-    }
-    nav button {
-      background: transparent;
-      color: #007bff;
-      border: none;
-      font-weight: bold;
-      padding: 10px 15px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    nav button.active {
-      border-bottom: 3px solid #007bff;
-      font-weight: 900;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    .actions button {
-      margin-right: 5px;
-      padding: 6px 12px;
-      font-size: 14px;
-    }
-    #logoutBtn {
-      float: right;
-      margin-top: -50px;
-      background: #dc3545;
-    }
+    body { font-family: Arial; padding: 10px; background: #f1f1f1; }
+    .painel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px gray; margin-bottom: 30px; }
+    .titulo { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+    .input { margin: 5px 0; padding: 6px; width: 100%; }
+    .botao { padding: 10px; background: #00c853; color: white; border: none; cursor: pointer; border-radius: 6px; }
+    .tabela { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .tabela th, .tabela td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    .secao { margin-bottom: 40px; }
   </style>
 </head>
 <body>
+  <div class="painel">
+    <div class="titulo">🔐 Painel Administrativo - Belcoin</div>
 
-<div class="login-container" id="loginDiv">
-  <h2>Login - Painel Administrativo Belcoin</h2>
-  <input type="email" id="email" placeholder="Email" autocomplete="username" />
-  <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
-  <button onclick="login()">Entrar</button>
-  <p id="loginError" style="color:red; margin-top: 10px;"></p>
-</div>
+    <div class="secao">
+      <div class="titulo">📊 Estatísticas</div>
+      <div>Total de Usuários: <span id="totalUsuarios">...</span></div>
+      <div>Total Investido: R$ <span id="totalInvestido">0.00</span></div>
+      <div>Total Sacado: R$ <span id="totalSacado">0.00</span></div>
+    </div>
 
-<div class="panel-container" id="panelDiv" style="display:none;">
-  <button id="logoutBtn" onclick="logout()">Sair</button>
-  <h2>Painel Administrativo Belcoin</h2>
-  <nav>
-    <button class="tabBtn active" onclick="openTab('usuarios')">Usuários</button>
-    <button class="tabBtn" onclick="openTab('investimentos')">Investimentos</button>
-    <button class="tabBtn" onclick="openTab('cupons')">Cupons</button>
-    <button class="tabBtn" onclick="openTab('logs')">Logs</button>
-    <button class="tabBtn" onclick="openTab('saques')">Saques</button>
-  </nav>
+    <div class="secao">
+      <div class="titulo">👤 Gerenciar Usuários</div>
+      <table class="tabela" id="tabelaUsuarios">
+        <thead>
+          <tr><th>Nome</th><th>Email</th><th>CPF</th><th>Telefone</th><th>Saldo</th><th>Ações</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-  <div id="usuarios" class="tabContent">
-    <h3>Usuários</h3>
-    <table id="usuariosTable">
-      <thead>
-        <tr>
-          <th>Nome</th>
-          <th>Email</th>
-          <th>CPF</th>
-          <th>Telefone</th>
-          <th>Saldo (R$)</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="secao">
+      <div class="titulo">💰 Ajustar Saldo</div>
+      <input class="input" type="text" id="emailSaldo" placeholder="Email do usuário">
+      <input class="input" type="number" id="valorSaldo" placeholder="Valor a adicionar (+) ou remover (-)">
+      <button class="botao" onclick="ajustarSaldo()">Atualizar Saldo</button>
+    </div>
+
+    <div class="secao">
+      <div class="titulo">🧑‍💼 Cargos</div>
+      <input class="input" type="text" id="emailCargo" placeholder="Email do usuário">
+      <select class="input" id="cargoSelecionado">
+        <option value="admin">Admin</option>
+        <option value="suporte">Suporte</option>
+        <option value="nenhum">Remover Cargo</option>
+      </select>
+      <button class="botao" onclick="atualizarCargo()">Atualizar Cargo</button>
+    </div>
+
+    <div class="secao">
+      <div class="titulo">🎁 Cupons</div>
+      <input class="input" type="text" id="codigoCupom" placeholder="Código do cupom">
+      <input class="input" type="number" id="valorCupom" placeholder="Valor em R$">
+      <button class="botao" onclick="criarCupom()">Criar Cupom</button>
+      <div id="listaCupons"></div>
+    </div>
+
+    <div class="secao">
+      <div class="titulo">💸 Saques Pendentes</div>
+      <table class="tabela" id="tabelaSaques">
+        <thead><tr><th>Email</th><th>Valor</th><th>Status</th><th>Ação</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="secao">
+      <div class="titulo">📆 Movimentações do Dia</div>
+      <div id="movimentacoesHoje"></div>
+    </div>
+
+    <div class="secao">
+      <div class="titulo">📜 Logs em Tempo Real</div>
+      <div id="logsTempoReal" style="max-height:200px; overflow-y: scroll;"></div>
+    </div>
   </div>
 
-  <div id="investimentos" class="tabContent" style="display:none;">
-    <h3>Investimentos</h3>
-    <table id="investimentosTable">
-      <thead>
-        <tr>
-          <th>ID Usuário</th>
-          <th>Tipo</th>
-          <th>Valor (R$)</th>
-          <th>Data Início</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
+      authDomain: "belcoin-92ee8.firebaseapp.com",
+      projectId: "belcoin-92ee8",
+      storageBucket: "belcoin-92ee8.appspot.com",
+      messagingSenderId: "604040948702",
+      appId: "1:604040948702:web:eb"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  <div id="cupons" class="tabContent" style="display:none;">
-    <h3>Cupons</h3>
-    <table id="cuponsTable">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Descrição</th>
-          <th>Desconto (%)</th>
-          <th>Validade</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button onclick="criarCupom()">Criar Cupom</button>
-  </div>
+    async function carregarEstatisticas() {
+      const usuarios = await db.collection("usuarios").get();
+      document.getElementById("totalUsuarios").innerText = usuarios.size;
 
-  <div id="logs" class="tabContent" style="display:none;">
-    <h3>Logs</h3>
-    <table id="logsTable">
-      <thead>
-        <tr>
-          <th>ID Usuário</th>
-          <th>Ação</th>
-          <th>Data</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div id="saques" class="tabContent" style="display:none;">
-    <h3>Saques</h3>
-    <table id="saquesTable">
-      <thead>
-        <tr>
-          <th>ID Usuário</th>
-          <th>Valor (R$)</th>
-          <th>Data Pedido</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
-    authDomain: "belcoin-92ee8.firebaseapp.com",
-    projectId: "belcoin-92ee8",
-    storageBucket: "belcoin-92ee8.appspot.com",
-    messagingSenderId: "604040948702",
-    appId: "1:604040948702:web:eb4f5f50ea11f25b4e3778"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  const emailAdmin = "cjogos3339@gmail.com";
-  const senhaAdmin = "ADMIN9798";
-
-  const loginDiv = document.getElementById("loginDiv");
-  const panelDiv = document.getElementById("panelDiv");
-  const loginError = document.getElementById("loginError");
-
-  // Login
-  function login() {
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("password").value.trim();
-
-    if(email === emailAdmin && senha === senhaAdmin){
-      loginDiv.style.display = "none";
-      panelDiv.style.display = "block";
-      carregarTodosDados();
-    } else {
-      loginError.textContent = "Email ou senha incorretos.";
+      let totalInvestido = 0;
+      let totalSacado = 0;
+      const movs = await db.collection("movimentacoes").get();
+      movs.forEach(doc => {
+        const m = doc.data();
+        if (m.tipo === "investimento") totalInvestido += Number(m.valor);
+        if (m.tipo === "saque") totalSacado += Number(m.valor);
+      });
+      document.getElementById("totalInvestido").innerText = totalInvestido.toFixed(2);
+      document.getElementById("totalSacado").innerText = totalSacado.toFixed(2);
     }
-  }
 
-  // Logout
-  function logout() {
-    panelDiv.style.display = "none";
-    loginDiv.style.display = "block";
-    loginError.textContent = "";
-    document.getElementById("email").value = "";
-    document.getElementById("password").value = "";
-  }
-
-  // Controle abas
-  const tabs = document.querySelectorAll(".tabBtn");
-  const contents = document.querySelectorAll(".tabContent");
-
-  function openTab(tabName) {
-    contents.forEach(c => c.style.display = "none");
-    tabs.forEach(t => t.classList.remove("active"));
-
-    document.getElementById(tabName).style.display = "block";
-    event.currentTarget.classList.add("active");
-  }
-
-  // --- Carregar dados das coleções ---
-  function carregarTodosDados() {
-    carregarUsuarios();
-    carregarInvestimentos();
-    carregarCupons();
-    carregarLogs();
-    carregarSaques();
-  }
-
-  // Usuários
-  function carregarUsuarios() {
-    const tbody = document.querySelector("#usuariosTable tbody");
-    tbody.innerHTML = "";
-    db.collection("usuarios").get().then(snapshot => {
+    db.collection("usuarios").onSnapshot(snapshot => {
+      const tabela = document.querySelector("#tabelaUsuarios tbody");
+      tabela.innerHTML = "";
       snapshot.forEach(doc => {
         const u = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${u.nome || ""}</td>
-          <td>${u.email || ""}</td>
-          <td>${u.cpf || ""}</td>
-          <td>${u.telefone || ""}</td>
-          <td>${parseFloat(u.saldo || 0).toFixed(2)}</td>
-          <td class="actions">
-            <button onclick="editarSaldo('${doc.id}', ${parseFloat(u.saldo || 0)})">Editar Saldo</button>
-            <button onclick="excluirUsuario('${doc.id}')">Excluir</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+        tabela.innerHTML += `
+          <tr>
+            <td>${u.nome}</td>
+            <td>${u.email}</td>
+            <td>${u.cpf}</td>
+            <td>${u.telefone}</td>
+            <td>R$ ${Number(u.saldo || 0).toFixed(2)}</td>
+            <td><button onclick="excluirUsuario('${doc.id}')">Excluir</button></td>
+          </tr>`;
       });
     });
-  }
 
-  function editarSaldo(userId, saldoAtual) {
-    const novoSaldo = prompt("Digite o novo saldo (R$):", saldoAtual);
-    if(novoSaldo !== null && !isNaN(parseFloat(novoSaldo))) {
-      db.collection("usuarios").doc(userId).update({ saldo: parseFloat(novoSaldo) });
-      carregarUsuarios();
-    }
-  }
-
-  function excluirUsuario(userId) {
-    if(confirm("Deseja realmente excluir este usuário?")) {
-      db.collection("usuarios").doc(userId).delete();
-      carregarUsuarios();
-    }
-  }
-
-  // Investimentos
-  function carregarInvestimentos() {
-    const tbody = document.querySelector("#investimentosTable tbody");
-    tbody.innerHTML = "";
-    db.collection("investimentos").get().then(snapshot => {
-      snapshot.forEach(doc => {
-        const inv = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${inv.usuarioId || ""}</td>
-          <td>${inv.tipo || ""}</td>
-          <td>${parseFloat(inv.valor || 0).toFixed(2)}</td>
-          <td>${inv.dataInicio || ""}</td>
-          <td>${inv.status || ""}</td>
-          <td class="actions">
-            <button onclick="excluirInvestimento('${doc.id}')">Excluir</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+    function ajustarSaldo() {
+      const email = document.getElementById("emailSaldo").value;
+      const valor = Number(document.getElementById("valorSaldo").value);
+      db.collection("usuarios").where("email", "==", email).get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const atual = Number(doc.data().saldo || 0);
+          doc.ref.update({ saldo: atual + valor });
+          db.collection("logs").add({
+            email,
+            acao: Saldo ajustado: R$ ${valor},
+            data: new Date().toISOString()
+          });
+        });
       });
-    });
-  }
-
-  function excluirInvestimento(id) {
-    if(confirm("Deseja excluir este investimento?")) {
-      db.collection("investimentos").doc(id).delete();
-      carregarInvestimentos();
     }
-  }
 
-  // Cupons
-  function carregarCupons() {
-    const tbody = document.querySelector("#cuponsTable tbody");
-    tbody.innerHTML = "";
-    db.collection("cupons").get().then(snapshot => {
-      snapshot.forEach(doc => {
-        const cup = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${cup.codigo || ""}</td>
-          <td>${cup.descricao || ""}</td>
-          <td>${cup.desconto || ""}</td>
-          <td>${cup.validade || ""}</td>
-          <td class="actions">
-            <button onclick="excluirCupom('${doc.id}')">Excluir</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+    function atualizarCargo() {
+      const email = document.getElementById("emailCargo").value;
+      const cargo = document.getElementById("cargoSelecionado").value;
+      db.collection("usuarios").where("email", "==", email).get().then(snapshot => {
+        snapshot.forEach(doc => {
+          const novoCargo = cargo === "nenhum" ? firebase.firestore.FieldValue.delete() : cargo;
+          doc.ref.update({ cargo: novoCargo });
+          db.collection("logs").add({
+            email,
+            acao: Cargo atualizado: ${cargo},
+            data: new Date().toISOString()
+          });
+        });
       });
-    });
-  }
+    }
 
-  function criarCupom() {
-    const codigo = prompt("Código do cupom:");
-    if(!codigo) return alert("Código obrigatório!");
-    const descricao = prompt("Descrição:");
-    const desconto = prompt("Desconto (%):");
-    const validade = prompt("Validade (ex: 2025-12-31):");
-    db.collection("cupons").add({
-      codigo,
-      descricao,
-      desconto,
-      validade
-    }).then(() => {
-      carregarCupons();
+    function criarCupom() {
+      const codigo = document.getElementById("codigoCupom").value;
+      const valor = Number(document.getElementById("valorCupom").value);
+      db.collection("cupons").doc(codigo).set({
+        valor, criado: new Date().toISOString()
+      });
       alert("Cupom criado com sucesso!");
-    });
-  }
-
-  function excluirCupom(id) {
-    if(confirm("Deseja excluir este cupom?")) {
-      db.collection("cupons").doc(id).delete();
-      carregarCupons();
     }
-  }
 
-  // Logs
-  function carregarLogs() {
-    const tbody = document.querySelector("#logsTable tbody");
-    tbody.innerHTML = "";
-    db.collection("logs").orderBy("data", "desc").limit(50).get().then(snapshot => {
+    db.collection("cupons").onSnapshot(snapshot => {
+      const div = document.getElementById("listaCupons");
+      div.innerHTML = "<ul>";
       snapshot.forEach(doc => {
-        const log = doc.data();
-        const tr = document.createElement("tr");
-        let dataFormatada = log.data ? new Date(log.data.seconds * 1000).toLocaleString() : "";
-        tr.innerHTML = `
-          <td>${log.usuarioId || ""}</td>
-          <td>${log.acao || ""}</td>
-          <td>${dataFormatada}</td>
-        `;
-        tbody.appendChild(tr);
+        div.innerHTML += <li>${doc.id}: R$ ${doc.data().valor}</li>;
       });
+      div.innerHTML += "</ul>";
     });
-  }
 
-  // Saques
-  function carregarSaques() {
-    const tbody = document.querySelector("#saquesTable tbody");
-    tbody.innerHTML = "";
-    db.collection("saques").get().then(snapshot => {
+    db.collection("saques").where("status", "==", "pendente").onSnapshot(snapshot => {
+      const tabela = document.querySelector("#tabelaSaques tbody");
+      tabela.innerHTML = "";
       snapshot.forEach(doc => {
         const s = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${s.usuarioId || ""}</td>
-          <td>${parseFloat(s.valor || 0).toFixed(2)}</td>
-          <td>${s.dataPedido || ""}</td>
-          <td>${s.status || ""}</td>
-          <td class="actions">
-            <button onclick="aprovarSaque('${doc.id}')">Aprovar</button>
-            <button onclick="rejeitarSaque('${doc.id}')">Rejeitar</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+        tabela.innerHTML += `
+          <tr>
+            <td>${s.email}</td>
+            <td>R$ ${s.valor}</td>
+            <td>${s.status}</td>
+            <td><button onclick="aprovarSaque('${doc.id}')">Aprovar</button></td>
+          </tr>`;
       });
     });
-  }
 
-  function aprovarSaque(id) {
-    if(confirm("Aprovar este saque?")) {
-      db.collection("saques").doc(id).update({ status: "Aprovado" });
-      carregarSaques();
+    function aprovarSaque(id) {
+      db.collection("saques").doc(id).update({ status: "aprovado" });
     }
-  }
 
-  function rejeitarSaque(id) {
-    if(confirm("Rejeitar este saque?")) {
-      db.collection("saques").doc(id).update({ status: "Rejeitado" });
-      carregarSaques();
+    function excluirUsuario(uid) {
+      if (confirm("Deseja excluir esse usuário?")) {
+        db.collection("usuarios").doc(uid).delete();
+      }
     }
-  }
-</script>
 
+    db.collection("logs").orderBy("data", "desc").limit(20).onSnapshot(snapshot => {
+      const logs = document.getElementById("logsTempoReal");
+      logs.innerHTML = "";
+      snapshot.forEach(doc => {
+        const l = doc.data();
+        logs.innerHTML += <div>[${l.data}] ${l.email}: ${l.acao}</div>;
+      });
+    });
+
+    const hoje = new Date().toISOString().split("T")[0];
+    db.collection("movimentacoes").onSnapshot(snapshot => {
+      const div = document.getElementById("movimentacoesHoje");
+      div.innerHTML = "";
+      snapshot.forEach(doc => {
+        const m = doc.data();
+        if (m.data?.startsWith(hoje)) {
+          div.innerHTML += <div>${m.email} - ${m.tipo}: R$ ${m.valor}</div>;
+        }
+      });
+    });
+
+    carregarEstatisticas();
+  </script>
 </body>
 </html>
