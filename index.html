@@ -1,75 +1,378 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>Painel Belcoin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Painel Belcoin</title>
+<style>
+  /* Reset e base */
+  * {
+    box-sizing: border-box;
+  }
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+  }
+  a {
+    color: #00bfa5; text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  /* Tela Login */
+  #login-page {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    height: 100vh; background: linear-gradient(135deg, #009688, #004d40);
+    color: #fff;
+  }
+  #login-page h1 {
+    font-size: 3rem; margin-bottom: 20px; font-weight: 900;
+    text-shadow: 0 0 5px #000;
+  }
+  #login-page input {
+    width: 280px; padding: 15px 20px;
+    margin: 8px 0; border: none; border-radius: 8px;
+    font-size: 1.1rem;
+  }
+  #login-page button {
+    width: 280px; padding: 15px;
+    background-color: #00bfa5; border: none; border-radius: 8px;
+    font-weight: 700; font-size: 1.2rem; color: #121212;
+    cursor: pointer; margin-top: 15px;
+    transition: background-color 0.3s ease;
+  }
+  #login-page button:hover {
+    background-color: #00796b;
+  }
+  #login-error {
+    margin-top: 15px; color: #ff5252; font-weight: 600;
+    min-height: 20px;
+  }
+  /* Painel principal */
+  #dashboard {
+    display: flex; height: 100vh;
+    background: #1e1e1e;
+  }
+  /* Menu lateral */
+  #sidebar {
+    width: 250px; background: #004d40; color: #a7ffeb;
+    display: flex; flex-direction: column; padding: 20px 0;
+  }
+  #sidebar h2 {
+    text-align: center; margin-bottom: 20px; font-weight: 900;
+    font-size: 2rem;
+    user-select: none;
+  }
+  #sidebar nav a {
+    padding: 15px 25px; display: block;
+    font-size: 1.1rem; cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  #sidebar nav a:hover, #sidebar nav a.active {
+    background: #00796b;
+    color: white;
+  }
+  /* Conteúdo principal */
+  #main-content {
+    flex-grow: 1; padding: 30px;
+    overflow-y: auto;
+  }
+  /* Títulos das seções */
+  #main-content h2 {
+    margin-top: 0;
+  }
+  /* Mensagem acesso negado */
+  .alert {
+    background-color: #b00020;
+    padding: 15px 20px;
+    border-radius: 6px;
+    margin: 20px 0;
+    font-weight: 700;
+    color: white;
+    user-select: none;
+  }
+  /* Tabela Usuários */
+  table {
+    width: 100%; border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th, td {
+    border: 1px solid #444;
+    padding: 12px 10px;
+    text-align: left;
+  }
+  th {
+    background-color: #00796b;
+  }
+  /* Botões */
+  button.action-btn {
+    background-color: #00bfa5;
+    border: none;
+    border-radius: 5px;
+    padding: 7px 12px;
+    color: #121212;
+    font-weight: 700;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: background-color 0.3s ease;
+  }
+  button.action-btn:hover {
+    background-color: #00796b;
+  }
+  /* Formulário saldo */
+  #saldo-form {
+    margin-top: 20px;
+  }
+  #saldo-form input[type="number"] {
+    width: 120px;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    margin-right: 8px;
+  }
+  #saldo-form button {
+    padding: 8px 14px;
+  }
+  /* Logout */
+  #logout-btn {
+    margin-top: auto;
+    background: #b00020;
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: 0 0 8px 8px;
+    user-select: none;
+  }
+  #logout-btn:hover {
+    background: #7f0000;
+  }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div id="login-page">
-    <h1>Painel de Iniciativa Belcoin</h1>
-    <input type="email" id="email" placeholder="Email"><br>
-    <input type="password" id="password" placeholder="Senha"><br>
-    <button onclick="login()">Entrar</button>
-    <p id="login-error" style="color:red;"></p>
-  </div>
 
-  <div id="dashboard" style="display:none;">
+<div id="login-page">
+  <h1>Belcoin</h1>
+  <input type="email" id="email" placeholder="E-mail" autocomplete="username" />
+  <input type="password" id="password" placeholder="Senha" autocomplete="current-password" />
+  <button onclick="login()">Entrar</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="dashboard" style="display:none;">
+  <div id="sidebar">
+    <h2>Belcoin</h2>
+    <nav>
+      <a href="#" class="active" data-section="usuarios">Usuários</a>
+      <a href="#" data-section="saldo">Saldo</a>
+      <a href="#" data-section="cupons">Cupons</a>
+      <a href="#" data-section="investimentos">Investimentos</a>
+      <a href="#" data-section="saques">Saques</a>
+      <a href="#" data-section="logs">Logs</a>
+      <a href="#" data-section="cargos">Cargos</a>
+    </nav>
+    <button id="logout-btn" onclick="logout()">Sair</button>
+  </div>
+  <main id="main-content">
     <h2>Bem-vindo ao Painel Belcoin</h2>
-    <button onclick="logout()">Sair</button>
-    <div id="user-data"></div>
-  </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
-      authDomain: "belcoin-92ee8.firebaseapp.com",
-      projectId: "belcoin-92ee8",
-      storageBucket: "belcoin-92ee8.firebasestorage.app",
-      messagingSenderId: "604040948702",
-      appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
-      measurementId: "G-SD1EYWDWPS"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    <section id="usuarios" class="section active-section">
+      <h3>Usuários cadastrados</h3>
+      <table id="usuarios-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Saldo</th>
+            <th>Cargo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+    <section id="saldo" class="section" style="display:none;">
+      <h3>Gerenciar Saldo</h3>
+      <div id="saldo-content"></div>
+    </section>
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("login-page").style.display = "none";
-          document.getElementById("dashboard").style.display = "block";
-          carregarUsuarios();
-        })
-        .catch((error) => {
-          document.getElementById("login-error").innerText = "Erro ao logar: " + error.message;
-        });
+    <section id="cupons" class="section" style="display:none;">
+      <h3>Cupons</h3>
+      <p>Funcionalidade em desenvolvimento.</p>
+    </section>
+
+    <section id="investimentos" class="section" style="display:none;">
+      <h3>Investimentos</h3>
+      <p>Funcionalidade em desenvolvimento.</p>
+    </section>
+
+    <section id="saques" class="section" style="display:none;">
+      <h3>Saques</h3>
+      <p>Funcionalidade em desenvolvimento.</p>
+    </section>
+
+    <section id="logs" class="section" style="display:none;">
+      <h3>Logs</h3>
+      <p>Funcionalidade em desenvolvimento.</p>
+    </section>
+
+    <section id="cargos" class="section" style="display:none;">
+      <h3>Gerenciar Cargos</h3>
+      <p>Funcionalidade em desenvolvimento.</p>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDg-uRqxD6-B4zQnn6buPUZEDTh7aHoBK8",
+    authDomain: "belcoin-92ee8.firebaseapp.com",
+    projectId: "belcoin-92ee8",
+    storageBucket: "belcoin-92ee8.firebasestorage.app",
+    messagingSenderId: "604040948702",
+    appId: "1:604040948702:web:eb78259e25ef4399bb8b4f",
+    measurementId: "G-SD1EYWDWPS"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentUser = null;
+  let currentCargo = null;
+
+  // Login
+  function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    document.getElementById("login-error").innerText = "";
+
+    if (!email || !password) {
+      document.getElementById("login-error").innerText = "Informe e-mail e senha!";
+      return;
     }
 
-    function logout() {
-      auth.signOut().then(() => {
-        location.reload();
+    auth.signInWithEmailAndPassword(email, password)
+      .then(({ user }) => {
+        currentUser = user;
+        carregarCargoUser(user.email);
+      })
+      .catch(e => {
+        document.getElementById("login-error").innerText = "Erro: " + e.message;
       });
-    }
+  }
 
-    function carregarUsuarios() {
-      db.collection("usuarios").get().then(snapshot => {
-        let html = "<h3>Usuários cadastrados:</h3><ul>";
+  // Logout
+  function logout() {
+    auth.signOut().then(() => {
+      location.reload();
+    });
+  }
+
+  // Carregar cargo do usuário logado
+  function carregarCargoUser(email) {
+    db.collection("usuarios").where("email", "==", email).get()
+      .then(snapshot => {
+        if (snapshot.empty) {
+          alert("Usuário sem cargo definido. Contate o administrador.");
+          auth.signOut();
+          return;
+        }
+        snapshot.forEach(doc => {
+          currentCargo = doc.data().cargo || "suporte";
+          mostrarDashboard();
+        });
+      })
+      .catch(err => {
+        alert("Erro ao carregar cargo: " + err.message);
+        auth.signOut();
+      });
+  }
+
+  // Mostrar painel e conteúdo conforme cargo
+  function mostrarDashboard() {
+    document.getElementById("login-page").style.display = "none";
+    document.getElementById("dashboard").style.display = "flex";
+    atualizarMenu();
+    carregarUsuarios();
+  }
+
+  // Atualizar menu lateral conforme cargo (esconder links restritos)
+  function atualizarMenu() {
+    const sections = {
+      usuarios: true,
+      saldo: currentCargo === "master",
+      cupons: currentCargo === "master",
+      investimentos: currentCargo === "master",
+      saques: currentCargo === "master",
+      logs: currentCargo === "master" || currentCargo === "TI",
+      cargos: currentCargo === "master"
+    };
+    const navLinks = document.querySelectorAll("#sidebar nav a");
+    navLinks.forEach(link => {
+      const sec = link.getAttribute("data-section");
+      if (sections[sec]) {
+        link.style.display = "block";
+      } else {
+        link.style.display = "none";
+      }
+    });
+    // Seleciona a primeira seção disponível
+    for (const key in sections) {
+      if (sections[key]) {
+        mostrarSecao(key);
+        break;
+      }
+    }
+  }
+
+  // Mostrar seção clicada
+  document.querySelectorAll("#sidebar nav a").forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const sec = link.getAttribute("data-section");
+      if (link.style.display === "none") {
+        alert("❌ Você não tem permissão para acessar esta área.");
+        return;
+      }
+      mostrarSecao(sec);
+      // Atualizar ativo
+      document.querySelectorAll("#sidebar nav a").forEach(l => l.classList.remove("active"));
+      link.classList.add("active");
+    });
+  });
+
+  function mostrarSecao(sec) {
+    document.querySelectorAll("section.section").forEach(s => s.style.display = "none");
+    document.getElementById(sec).style.display = "block";
+  }
+
+  // Carregar lista de usuários e preencher tabela
+  function carregarUsuarios() {
+    const tbody = document.querySelector("#usuarios-table tbody");
+    tbody.innerHTML = "";
+    db.collection("usuarios").get()
+      .then(snapshot => {
         snapshot.forEach(doc => {
           const data = doc.data();
-          html += `<li>${data.nome || 'Sem nome'} - Email: ${data.email || 'sem email'} - Saldo: R$ ${data.saldo || 0}</li>`;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${data.nome || "-"}</td>
+            <td>${data.email || "-"}</td>
+            <td>R$ ${data.saldo?.toFixed(2) || "0.00"}</td>
+            <td>${data.cargo || "-"}</td>
+          `;
+          tbody.appendChild(tr);
         });
-        html += "</ul>";
-        document.getElementById("user-data").innerHTML = html;
       });
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
