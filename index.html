@@ -1,137 +1,134 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
   <title>Painel Administrativo - Belcoin</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
-    header { background: #1e1e2f; color: white; padding: 10px; text-align: center; }
-    #loginForm, #painel, #negado { max-width: 500px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
-    input { display: block; width: 100%; margin-bottom: 10px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-    button { padding: 10px 20px; background: #1e1e2f; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    .hidden { display: none; }
-    nav { background: #222; color: white; padding: 10px; }
-    .card { background: #eee; padding: 15px; border-radius: 10px; margin: 10px 0; }
-    .section { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+    .user {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+    }
+    button {
+      padding: 6px 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button.red {
+      background: #f44336;
+    }
   </style>
 </head>
 <body>
-  <header><h2>Painel Administrativo - Belcoin</h2></header>
 
-  <div id="loginForm">
-    <h3>Login</h3>
-    <input type="email" id="email" placeholder="Email" value="cjogos3339@gmail.com"/>
-    <input type="password" id="password" placeholder="Senha" value="RbarbaT7"/>
+  <h2>Painel Administrativo - Belcoin</h2>
+  <div id="loginDiv">
+    <input type="email" id="email" placeholder="E-mail do admin" value="admin@belcoin.com"><br><br>
+    <input type="password" id="password" placeholder="Senha" value="Rbarbat7"><br><br>
     <button onclick="login()">Entrar</button>
   </div>
 
-  <div id="negado" class="hidden">
-    <h3>Acesso Negado</h3>
-    <p>Você não tem permissão para acessar este painel.</p>
-  </div>
-
-  <div id="painel" class="hidden">
-    <nav>
-      <span id="userEmail"></span>
-      <button onclick="logout()">Sair</button>
-    </nav>
-
-    <div class="card"><strong>Total de Usuários:</strong> <span id="totalUsuarios">0</span></div>
-    <div class="card"><strong>Total de Investimentos:</strong> <span id="totalInvest">0</span></div>
-    <div class="card"><strong>Total de Saques:</strong> <span id="totalSaques">0</span></div>
-
-    <div class="section">
-      <h3>Usuários</h3>
-      <div id="usuariosList"></div>
-    </div>
+  <div id="painel" style="display:none;">
+    <p>Logado como <span id="adminEmail"></span> | <button onclick="logout()">Sair</button></p>
+    <div id="usuarios"></div>
   </div>
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyCfmFkLcw5RXPro2vRtqPVrxqOIu9GQ_XM",
-      authDomain: "beefundapp-982d2.firebaseapp.com",
-      projectId: "beefundapp-982d2",
-      storageBucket: "beefundapp-982d2.appspot.com",
-      messagingSenderId: "366022612326",
-      appId: "1:366022612326:web:455efb0b2bd43699e03ad1"
+      apiKey: "AIzaSyCQ7HliKMivBiLRMC_Xf-8Qu-aTY0rYuOQ",
+      authDomain: "belcoin-projeto.firebaseapp.com",
+      projectId: "belcoin-projeto",
+      storageBucket: "belcoin-projeto.appspot.com",
+      messagingSenderId: "783399793173",
+      appId: "1:783399793173:web:4e58f0a9753df3942fc9de"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    async function login() {
+    function login() {
       const email = document.getElementById("email").value;
-      const senha = document.getElementById("password").value;
-      try {
-        const userCredential = await auth.signInWithEmailAndPassword(email, senha);
-        const user = userCredential.user;
-        const doc = await db.collection("usuarios").doc(user.uid).get();
-        if (!doc.exists || doc.data().cargo !== "master") {
-          document.getElementById("loginForm").classList.add("hidden");
-          document.getElementById("negado").classList.remove("hidden");
-          return;
-        }
-        carregarPainel(user);
-      } catch (err) {
-        alert("Erro ao logar: " + err.message);
-      }
+      const password = document.getElementById("password").value;
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          document.getElementById("loginDiv").style.display = "none";
+          document.getElementById("painel").style.display = "block";
+          document.getElementById("adminEmail").innerText = email;
+          carregarUsuarios();
+        })
+        .catch(error => {
+          alert("Erro ao entrar: " + error.message);
+        });
     }
 
     function logout() {
-      auth.signOut().then(() => location.reload());
-    }
-
-    async function carregarPainel(user) {
-      document.getElementById("loginForm").classList.add("hidden");
-      document.getElementById("painel").classList.remove("hidden");
-      document.getElementById("userEmail").innerText = user.email;
-
-      // Totais
-      const usuarios = await db.collection("usuarios").get();
-      const investimentos = await db.collection("investimentos").get();
-      const saques = await db.collection("saques").get();
-      document.getElementById("totalUsuarios").innerText = usuarios.size;
-      document.getElementById("totalInvest").innerText = investimentos.size;
-      document.getElementById("totalSaques").innerText = saques.size;
-
-      // Lista de usuários
-      const list = document.getElementById("usuariosList");
-      list.innerHTML = "";
-      usuarios.forEach(doc => {
-        const u = doc.data();
-        const div = document.createElement("div");
-        div.classList.add("card");
-        div.innerHTML = `
-          <strong>Nome:</strong> ${u.nome || ""}<br>
-          <strong>Email:</strong> ${u.email}<br>
-          <strong>Telefone:</strong> ${u.telefone || ""}<br>
-          <strong>CPF:</strong> ${u.cpf || ""}<br>
-          <strong>Saldo:</strong> R$ ${u.saldo || 0}<br>
-          <strong>Cargo:</strong> ${u.cargo || "nenhum"}<br>
-          <button onclick="alterarSaldo('${doc.id}')">Alterar Saldo</button>
-          <button onclick="removerUsuario('${doc.id}')">Excluir Usuário</button>
-        `;
-        list.appendChild(div);
+      auth.signOut().then(() => {
+        location.reload();
       });
     }
 
-    function alterarSaldo(uid) {
-      const novoSaldo = prompt("Novo saldo:");
-      if (novoSaldo !== null) {
-        db.collection("usuarios").doc(uid).update({ saldo: parseFloat(novoSaldo) });
-        alert("Saldo atualizado.");
-        location.reload();
-      }
+    function carregarUsuarios() {
+      db.collection("usuarios").onSnapshot(snapshot => {
+        const container = document.getElementById("usuarios");
+        container.innerHTML = "<h3>Lista de Usuários:</h3>";
+        snapshot.forEach(doc => {
+          const dados = doc.data();
+          const div = document.createElement("div");
+          div.className = "card user";
+          div.innerHTML = `
+            <strong>Nome:</strong> ${dados.nome || "N/A"}<br>
+            <strong>E-mail:</strong> ${dados.email}<br>
+            <strong>CPF:</strong> ${dados.cpf || "N/A"}<br>
+            <strong>Telefone:</strong> ${dados.telefone || "N/A"}<br>
+            <strong>Saldo Atual:</strong> R$ ${dados.saldo?.toFixed(2) || "0.00"}<br>
+            <strong>Rendimento:</strong> R$ ${dados.rendimento?.toFixed(2) || "0.00"}<br><br>
+            <input type="number" id="novoSaldo-${doc.id}" placeholder="Novo saldo">
+            <button onclick="atualizarSaldo('${doc.id}')">Atualizar Saldo</button>
+            <button class="red" onclick="excluirUsuario('${doc.id}')">Excluir Usuário</button>
+          `;
+          container.appendChild(div);
+        });
+      });
     }
 
-    function removerUsuario(uid) {
-      if (confirm("Deseja excluir este usuário?")) {
-        db.collection("usuarios").doc(uid).delete();
-        alert("Usuário removido.");
-        location.reload();
+    function atualizarSaldo(userId) {
+      const novoValor = parseFloat(document.getElementById(`novoSaldo-${userId}`).value);
+      if (isNaN(novoValor)) {
+        alert("Digite um valor válido.");
+        return;
+      }
+      db.collection("usuarios").doc(userId).update({ saldo: novoValor })
+        .then(() => {
+          alert("Saldo atualizado com sucesso!");
+        });
+    }
+
+    function excluirUsuario(userId) {
+      if (confirm("Tem certeza que deseja excluir este usuário?")) {
+        db.collection("usuarios").doc(userId).delete()
+          .then(() => {
+            alert("Usuário excluído.");
+          });
       }
     }
   </script>
