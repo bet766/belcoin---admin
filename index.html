@@ -1,120 +1,1466 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Administrativo - Belcoin</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Belcoin - Plataforma de Investimentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
   <style>
-    body { background-color: #121212; color: #fff; padding: 2rem; font-family: Arial, sans-serif; }
-    .card { background-color: #1e1e1e; border: none; border-radius: 15px; margin-bottom: 1rem; }
-    .btn-primary { background-color: #00c853; border: none; }
-    .btn-primary:hover { background-color: #00b44a; }
-    .input-group-text, .form-control { background-color: #2c2c2c; border: 1px solid #444; color: white; }
-    .form-control:focus { background-color: #2c2c2c; color: white; }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 </head>
-<body>
-  <div class="container">
-    <h2 class="mb-4">Painel Administrativo - Belcoin</h2><div id="loginDiv">
-  <div class="card p-4">
-    <h4>Login Admin</h4>
-    <input id="email" class="form-control my-2" type="email" placeholder="Email">
-    <input id="password" class="form-control my-2" type="password" placeholder="Senha">
-    <button onclick="login()" class="btn btn-primary w-100">Entrar</button>
-  </div>
-</div>
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
-<div id="adminPanel" style="display:none">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>Bem-vindo, <span id="adminEmail"></span></h4>
-    <button onclick="logout()" class="btn btn-danger">Sair</button>
+  <div id="app" class="flex-grow flex flex-col">
+    <!-- The app content will be rendered here by JS -->
   </div>
 
-  <div class="card p-3">
-    <h5>Usuários Cadastrados</h5>
-    <div id="userList"></div>
-  </div>
-
-  <div class="card p-3">
-    <h5>Adicionar Cargo</h5>
-    <input id="targetUID" class="form-control my-2" placeholder="UID do Usuário">
-    <select id="roleSelect" class="form-control my-2">
-      <option value="suporte">Suporte</option>
-      <option value="saldo">Financeiro</option>
-      <option value="ti">TI</option>
-    </select>
-    <button onclick="setRole()" class="btn btn-primary">Definir Cargo</button>
-  </div>
-</div>
-
-  </div>  <script>
+  <script>
+    // Firebase config and initialization
     const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_AUTH_DOMAIN",
-      databaseURL: "SUA_DATABASE_URL",
-      projectId: "SEU_PROJECT_ID",
-      storageBucket: "SEU_STORAGE_BUCKET",
-      messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-      appId: "SEU_APP_ID"
+      apiKey: "AIzaSyBuOzmtFPWeNKJTKB-jrLxFmfn2Nswypvc",
+      authDomain: "invest-8c4e6.firebaseapp.com",
+      projectId: "invest-8c4e6",
+      storageBucket: "invest-8c4e6.appspot.com",
+      messagingSenderId: "1021993177452",
+      appId: "1:1021993177452:web:f704ca9b8127bb3ba76349"
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.database();
+    const db = firebase.firestore();
 
-    function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const uid = userCredential.user.uid;
-          db.ref('usuarios/' + uid + '/cargo').once('value', (snapshot) => {
-            if (snapshot.val() === 'adminMaster') {
-              document.getElementById('loginDiv').style.display = 'none';
-              document.getElementById('adminPanel').style.display = 'block';
-              document.getElementById('adminEmail').innerText = email;
-              loadUsers();
-            } else {
-              alert('Acesso negado. Apenas adminMaster pode acessar.');
-              auth.signOut();
-            }
-          });
-        })
-        .catch(error => alert(error.message));
-    }
-
-    function logout() {
-      auth.signOut().then(() => {
-        document.getElementById('loginDiv').style.display = 'block';
-        document.getElementById('adminPanel').style.display = 'none';
+    // Utility functions
+    function createElement(tag, attrs = {}, ...children) {
+      const el = document.createElement(tag);
+      for (const key in attrs) {
+        if (key === "className") el.className = attrs[key];
+        else if (key.startsWith("on") && typeof attrs[key] === "function") {
+          el.addEventListener(key.substring(2).toLowerCase(), attrs[key]);
+        } else if (key === "htmlFor") {
+          el.htmlFor = attrs[key];
+        } else {
+          el.setAttribute(key, attrs[key]);
+        }
+      }
+      children.forEach((child) => {
+        if (typeof child === "string") el.appendChild(document.createTextNode(child));
+        else if (child instanceof Node) el.appendChild(child);
       });
+      return el;
     }
 
-    function loadUsers() {
-      const userList = document.getElementById('userList');
-      userList.innerHTML = '';
-      db.ref('usuarios').once('value', (snapshot) => {
-        snapshot.forEach((child) => {
-          const user = child.val();
-          const div = document.createElement('div');
-          div.innerHTML = `<b>${user.nome}</b> (${child.key})<br>Email: ${user.email}<br>Cargo: ${user.cargo || 'Sem cargo'}<hr>`;
-          userList.appendChild(div);
-        });
-      });
+    // Format CPF (Brazilian document) as 000.000.000-00
+    function formatCPF(value) {
+      return value
+        .replace(/\D/g, "")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     }
 
-    function setRole() {
-      const uid = document.getElementById('targetUID').value;
-      const role = document.getElementById('roleSelect').value;
-      if (uid) {
-        db.ref('usuarios/' + uid).update({ cargo: role });
-        alert('Cargo atribuído com sucesso!');
-        loadUsers();
+    // Format phone (Brazilian) as (00) 00000-0000
+    function formatPhone(value) {
+      return value
+        .replace(/\D/g, "")
+        .replace(/(\d{2})(\d)/, "($1) $2")
+        .replace(/(\d{5})(\d)/, "$1-$2")
+        .replace(/(-\d{4})\d+?$/, "$1");
+    }
+
+    // Format currency BRL
+    function formatCurrency(value) {
+      return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    // Format date dd/mm/yyyy hh:mm
+    function formatDate(date) {
+      const d = new Date(date);
+      return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", {hour: '2-digit', minute:'2-digit'});
+    }
+
+    // Calculate progress percentage for investment time
+    function calculateProgress(startTimestamp, durationDays) {
+      const now = Date.now();
+      const start = startTimestamp;
+      const end = start + durationDays * 24 * 60 * 60 * 1000;
+      if (now >= end) return 100;
+      if (now <= start) return 0;
+      return Math.floor(((now - start) / (end - start)) * 100);
+    }
+
+    // App state
+    let currentUser = null;
+    let currentUserData = null;
+    let isAdmin = false;
+    let adminUserData = null;
+
+    // Main container
+    const app = document.getElementById("app");
+
+    // ROUTING
+    // Simple hash routing: #login, #register, #client, #admin
+    function router() {
+      const hash = window.location.hash || "#login";
+      if (hash === "#login") {
+        renderLogin();
+      } else if (hash === "#register") {
+        renderRegister();
+      } else if (hash === "#client") {
+        if (!currentUser) {
+          window.location.hash = "#login";
+          return;
+        }
+        if (isAdmin) {
+          window.location.hash = "#admin";
+          return;
+        }
+        renderClientDashboard();
+      } else if (hash === "#admin") {
+        if (!currentUser || !isAdmin) {
+          window.location.hash = "#login";
+          return;
+        }
+        renderAdminDashboard();
       } else {
-        alert('Informe um UID válido.');
+        window.location.hash = "#login";
       }
     }
-  </script></body>
-</html>
+
+    // AUTH STATE LISTENER
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        // Load user data from Firestore
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists) {
+          currentUserData = userDoc.data();
+          isAdmin = currentUserData.role && (currentUserData.role === "adminMaster" || currentUserData.role === "suporte" || currentUserData.role === "social");
+          if (isAdmin) adminUserData = currentUserData;
+          else adminUserData = null;
+          router();
+        } else {
+          // User doc missing, create minimal data
+          await db.collection("users").doc(user.uid).set({
+            name: user.displayName || "",
+            email: user.email,
+            cpf: "",
+            phone: "",
+            saldo: 0,
+            investments: [],
+            referrals: [],
+            bonusCouponsUsed: [],
+            activated: false,
+            role: "client",
+            createdAt: Date.now(),
+            depositHistory: [],
+            withdrawalHistory: [],
+            vipAccess: false,
+            withdrawalBlocked: true,
+          });
+          currentUserData = (await db.collection("users").doc(user.uid).get()).data();
+          isAdmin = false;
+          adminUserData = null;
+          router();
+        }
+      } else {
+        currentUser = null;
+        currentUserData = null;
+        isAdmin = false;
+        adminUserData = null;
+        router();
+      }
+    });
+
+    // LOGIN PAGE
+    function renderLogin() {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-16 p-6 bg-white rounded-lg shadow-md" },
+        createElement("h1", { className: "text-3xl font-semibold mb-6 text-center text-blue-700" }, "Belcoin - Login"),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const email = e.target.email.value.trim();
+              const password = e.target.password.value;
+              if (!email || !password) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+              }
+              try {
+                await auth.signInWithEmailAndPassword(email, password);
+              } catch (error) {
+                alert("Erro ao fazer login: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "email", className: "block text-gray-700 mb-1" }, "E-mail"),
+            createElement("input", {
+              type: "email",
+              id: "email",
+              name: "email",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "password", className: "block text-gray-700 mb-1" }, "Senha"),
+            createElement("input", {
+              type: "password",
+              id: "password",
+              name: "password",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            },
+            "Entrar"
+          )
+        ),
+        createElement(
+          "p",
+          { className: "mt-4 text-center text-gray-600" },
+          "Não tem conta? ",
+          createElement(
+            "a",
+            {
+              href: "#register",
+              className: "text-blue-600 hover:underline"
+            },
+            "Cadastre-se"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // REGISTER PAGE
+    function renderRegister() {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-12 p-6 bg-white rounded-lg shadow-md" },
+        createElement("h1", { className: "text-3xl font-semibold mb-6 text-center text-green-700" }, "Belcoin - Cadastro"),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const name = e.target.name.value.trim();
+              let cpf = e.target.cpf.value.trim();
+              let phone = e.target.phone.value.trim();
+              const email = e.target.email.value.trim();
+              const password = e.target.password.value;
+              const passwordConfirm = e.target.passwordConfirm.value;
+              if (!name || !cpf || !phone || !email || !password || !passwordConfirm) {
+                alert("Por favor, preencha todos os campos.");
+                return;
+              }
+              if (password !== passwordConfirm) {
+                alert("As senhas não coincidem.");
+                return;
+              }
+              cpf = cpf.replace(/\D/g, "");
+              phone = phone.replace(/\D/g, "");
+              try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                await user.updateProfile({ displayName: name });
+                await db.collection("users").doc(user.uid).set({
+                  name,
+                  cpf,
+                  phone,
+                  email,
+                  saldo: 0,
+                  investments: [],
+                  referrals: [],
+                  bonusCouponsUsed: [],
+                  activated: false,
+                  role: "client",
+                  createdAt: Date.now(),
+                  depositHistory: [],
+                  withdrawalHistory: [],
+                  vipAccess: false,
+                  withdrawalBlocked: true,
+                  referralLink: `https://belcoin.app/register?ref=${user.uid}`
+                });
+                alert("Cadastro realizado com sucesso! Você será redirecionado para o login.");
+                window.location.hash = "#login";
+              } catch (error) {
+                alert("Erro ao cadastrar: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "name", className: "block text-gray-700 mb-1" }, "Nome Completo"),
+            createElement("input", {
+              type: "text",
+              id: "name",
+              name: "name",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "cpf", className: "block text-gray-700 mb-1" }, "CPF"),
+            createElement("input", {
+              type: "text",
+              id: "cpf",
+              name: "cpf",
+              maxLength: 14,
+              required: true,
+              oninput: (e) => {
+                e.target.value = formatCPF(e.target.value);
+              },
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "phone", className: "block text-gray-700 mb-1" }, "Telefone"),
+            createElement("input", {
+              type: "text",
+              id: "phone",
+              name: "phone",
+              maxLength: 15,
+              required: true,
+              oninput: (e) => {
+                e.target.value = formatPhone(e.target.value);
+              },
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "email", className: "block text-gray-700 mb-1" }, "E-mail"),
+            createElement("input", {
+              type: "email",
+              id: "email",
+              name: "email",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "password", className: "block text-gray-700 mb-1" }, "Senha"),
+            createElement("input", {
+              type: "password",
+              id: "password",
+              name: "password",
+              required: true,
+              minLength: 6,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "passwordConfirm", className: "block text-gray-700 mb-1" }, "Confirmar Senha"),
+            createElement("input", {
+              type: "password",
+              id: "passwordConfirm",
+              name: "passwordConfirm",
+              required: true,
+              minLength: 6,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+            },
+            "Cadastrar"
+          )
+        ),
+        createElement(
+          "p",
+          { className: "mt-4 text-center text-gray-600" },
+          "Já tem conta? ",
+          createElement(
+            "a",
+            {
+              href: "#login",
+              className: "text-green-600 hover:underline"
+            },
+            "Entrar"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // CLIENT DASHBOARD
+    async function renderClientDashboard() {
+      app.innerHTML = "";
+      // Reload user data fresh
+      const userDoc = await db.collection("users").doc(currentUser.uid).get();
+      currentUserData = userDoc.data();
+
+      // Calculate total saldo
+      const saldo = currentUserData.saldo || 0;
+      const activated = currentUserData.activated || false;
+      const withdrawalBlocked = currentUserData.withdrawalBlocked !== false; // default true
+      const vipAccess = currentUserData.vipAccess || false;
+
+      // Investments array
+      const investments = currentUserData.investments || [];
+
+      // Referral link
+      const referralLink = currentUserData.referralLink || `https://belcoin.app/register?ref=${currentUser.uid}`;
+
+      // Bonus coupons used
+      const bonusCouponsUsed = currentUserData.bonusCouponsUsed || [];
+
+      // Container
+      const container = createElement(
+        "div",
+        { className: "max-w-4xl mx-auto mt-8 p-6 bg-white rounded-lg shadow-md flex flex-col space-y-6" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center" },
+          createElement("h1", { className: "text-3xl font-semibold text-blue-700" }, `Olá, ${currentUserData.name}`),
+          createElement(
+            "button",
+            {
+              className: "text-red-600 hover:text-red-800 font-semibold",
+              onclick: async () => {
+                await auth.signOut();
+                window.location.hash = "#login";
+              }
+            },
+            createElement("i", { className: "fas fa-sign-out-alt mr-2" }),
+            "Sair"
+          )
+        ),
+        createElement(
+          "section",
+          { className: "bg-blue-50 p-4 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between" },
+          createElement(
+            "div",
+            {},
+            createElement("h2", { className: "text-xl font-semibold text-blue-900" }, "Saldo Atual"),
+            createElement("p", { className: "text-3xl font-bold text-blue-700" }, formatCurrency(saldo))
+          ),
+          createElement(
+            "div",
+            { className: "mt-4 md:mt-0" },
+            createElement(
+              "button",
+              {
+                className: "bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition mr-2",
+                onclick: () => {
+                  renderDeposit();
+                }
+              },
+              createElement("i", { className: "fas fa-wallet mr-2" }),
+              "Depositar"
+            ),
+            createElement(
+              "button",
+              {
+                className: "bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition",
+                disabled: withdrawalBlocked,
+                title: withdrawalBlocked ? "Saque bloqueado até ativar conta com depósito mínimo" : "",
+                onclick: () => {
+                  renderWithdraw();
+                }
+              },
+              createElement("i", { className: "fas fa-hand-holding-usd mr-2" }),
+              "Sacar"
+            )
+          )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Investimentos"),
+          createElement(
+            "div",
+            { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+            ...[1, 7, 30].map((days) => {
+              return createElement(
+                "div",
+                {
+                  className: "bg-white border border-gray-300 rounded-lg p-4 flex flex-col justify-between shadow-sm"
+                },
+                createElement("h3", { className: "text-lg font-semibold mb-2 text-gray-900" }, `Investimento ${days} dia${days > 1 ? "s" : ""}`),
+                createElement(
+                  "p",
+                  { className: "mb-4 text-gray-700" },
+                  `Rendimento garantido após ${days} dia${days > 1 ? "s" : ""}.`
+                ),
+                createElement(
+                  "button",
+                  {
+                    className: "bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition",
+                    onclick: () => {
+                      renderNewInvestment(days);
+                    }
+                  },
+                  "Investir"
+                )
+              );
+            })
+          )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Meus Investimentos Ativos"),
+          investments.length === 0
+            ? createElement("p", { className: "text-gray-600" }, "Nenhum investimento ativo no momento.")
+            : createElement(
+                "div",
+                { className: "space-y-4" },
+                ...investments.map((inv) => {
+                  const progress = calculateProgress(inv.startTimestamp, inv.durationDays);
+                  const endDate = new Date(inv.startTimestamp + inv.durationDays * 24 * 60 * 60 * 1000);
+                  return createElement(
+                    "div",
+                    {
+                      className: "bg-gray-100 p-4 rounded-lg shadow-inner flex flex-col"
+                    },
+                    createElement(
+                      "div",
+                      { className: "flex justify-between items-center mb-2" },
+                      createElement("span", { className: "font-semibold text-gray-900" }, `Investimento de ${formatCurrency(inv.amount)}`),
+                      createElement("span", { className: "text-sm text-gray-600" }, `Termina em ${formatDate(endDate)}`)
+                    ),
+                    createElement(
+                      "div",
+                      { className: "w-full bg-gray-300 rounded-full h-4 overflow-hidden" },
+                      createElement("div", {
+                        className: "bg-green-500 h-4 rounded-full transition-all duration-500",
+                        style: `width: ${progress}%;`
+                      })
+                    ),
+                    createElement(
+                      "span",
+                      { className: "text-right text-sm text-gray-700 mt-1" },
+                      `${progress}% concluído`
+                    )
+                  );
+                })
+              )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Sistema de Indicação"),
+          createElement(
+            "p",
+            { className: "mb-2 text-gray-700 break-all" },
+            "Seu link de indicação:",
+            createElement(
+              "a",
+              {
+                href: referralLink,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                className: "text-blue-600 hover:underline ml-2"
+              },
+              referralLink
+            )
+          ),
+          createElement(
+            "button",
+            {
+              className: "bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition",
+              onclick: () => {
+                navigator.clipboard.writeText(referralLink);
+                alert("Link de indicação copiado para a área de transferência!");
+              }
+            },
+            createElement("i", { className: "fas fa-copy mr-2" }),
+            "Copiar Link"
+          )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Cupons de Bônus"),
+          bonusCouponsUsed.length === 0
+            ? createElement("p", { className: "text-gray-600" }, "Nenhum cupom utilizado.")
+            : createElement(
+                "ul",
+                { className: "list-disc list-inside text-gray-700" },
+                ...bonusCouponsUsed.map((coupon) => createElement("li", {}, coupon))
+              ),
+          createElement(
+            "form",
+            {
+              className: "mt-4 flex space-x-2",
+              onsubmit: async (e) => {
+                e.preventDefault();
+                const couponCode = e.target.coupon.value.trim().toUpperCase();
+                if (!couponCode) {
+                  alert("Digite um código de cupom.");
+                  return;
+                }
+                try {
+                  // Check coupon in Firestore
+                  const couponDoc = await db.collection("coupons").doc(couponCode).get();
+                  if (!couponDoc.exists) {
+                    alert("Cupom inválido.");
+                    return;
+                  }
+                  const couponData = couponDoc.data();
+                  if (couponData.expired) {
+                    alert("Cupom expirado.");
+                    return;
+                  }
+                  if (bonusCouponsUsed.includes(couponCode)) {
+                    alert("Você já usou este cupom.");
+                    return;
+                  }
+                  // Apply bonus to user saldo
+                  const bonusValue = couponData.value || 0;
+                  await db.collection("users").doc(currentUser.uid).update({
+                    saldo: firebase.firestore.FieldValue.increment(bonusValue),
+                    bonusCouponsUsed: firebase.firestore.FieldValue.arrayUnion(couponCode)
+                  });
+                  alert(`Cupom aplicado! Bônus de ${formatCurrency(bonusValue)} creditado.`);
+                  e.target.coupon.value = "";
+                  renderClientDashboard();
+                } catch (error) {
+                  alert("Erro ao aplicar cupom: " + error.message);
+                }
+              }
+            },
+            createElement("input", {
+              type: "text",
+              name: "coupon",
+              placeholder: "Digite o código do cupom",
+              className: "flex-grow px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            }),
+            createElement(
+              "button",
+              {
+                type: "submit",
+                className: "bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+              },
+              "Aplicar"
+            )
+          )
+        ),
+        !activated
+          ? createElement(
+              "section",
+              { className: "bg-yellow-100 p-4 rounded-lg text-yellow-800 font-semibold" },
+              "Sua conta está bloqueada para saques. Faça um depósito mínimo para ativar."
+            )
+          : null,
+        activated && vipAccess
+          ? createElement(
+              "section",
+              { className: "flex space-x-4" },
+              createElement(
+                "a",
+                {
+                  href: "https://t.me/belcoinvip",
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+                },
+                createElement("i", { className: "fab fa-telegram-plane text-xl" }),
+                createElement("span", {}, "Grupo VIP Telegram")
+              ),
+              createElement(
+                "a",
+                {
+                  href: "https://chat.whatsapp.com/belcoinvip",
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+                },
+                createElement("i", { className: "fab fa-whatsapp text-xl" }),
+                createElement("span", {}, "Grupo VIP WhatsApp")
+              )
+            )
+          : null
+      );
+      app.appendChild(container);
+    }
+
+    // DEPOSIT PAGE
+    function renderDeposit() {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-12 p-6 bg-white rounded-lg shadow-md" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center mb-6" },
+          createElement("h1", { className: "text-2xl font-semibold text-green-700" }, "Depositar"),
+          createElement(
+            "button",
+            {
+              className: "text-gray-600 hover:text-gray-900",
+              onclick: () => {
+                window.location.hash = "#client";
+              }
+            },
+            createElement("i", { className: "fas fa-arrow-left mr-2" }),
+            "Voltar"
+          )
+        ),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const amount = parseFloat(e.target.amount.value);
+              if (isNaN(amount) || amount <= 0) {
+                alert("Digite um valor válido para depósito.");
+                return;
+              }
+              try {
+                // Add deposit record
+                const depositRecord = {
+                  amount,
+                  timestamp: Date.now(),
+                  status: "pending"
+                };
+                await db.collection("users").doc(currentUser.uid).update({
+                  depositHistory: firebase.firestore.FieldValue.arrayUnion(depositRecord)
+                });
+                alert("Depósito registrado. Aguarde confirmação do administrador.");
+                window.location.hash = "#client";
+              } catch (error) {
+                alert("Erro ao registrar depósito: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "amount", className: "block text-gray-700 mb-1" }, "Valor do Depósito (R$)"),
+            createElement("input", {
+              type: "number",
+              id: "amount",
+              name: "amount",
+              min: "1",
+              step: "0.01",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            })
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
+            },
+            "Registrar Depósito"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // WITHDRAW PAGE
+    function renderWithdraw() {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-12 p-6 bg-white rounded-lg shadow-md" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center mb-6" },
+          createElement("h1", { className: "text-2xl font-semibold text-yellow-700" }, "Sacar"),
+          createElement(
+            "button",
+            {
+              className: "text-gray-600 hover:text-gray-900",
+              onclick: () => {
+                window.location.hash = "#client";
+              }
+            },
+            createElement("i", { className: "fas fa-arrow-left mr-2" }),
+            "Voltar"
+          )
+        ),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const amount = parseFloat(e.target.amount.value);
+              if (isNaN(amount) || amount <= 0) {
+                alert("Digite um valor válido para saque.");
+                return;
+              }
+              if (amount > currentUserData.saldo) {
+                alert("Saldo insuficiente.");
+                return;
+              }
+              try {
+                // Add withdrawal record
+                const withdrawalRecord = {
+                  amount,
+                  timestamp: Date.now(),
+                  status: "pending"
+                };
+                await db.collection("users").doc(currentUser.uid).update({
+                  withdrawalHistory: firebase.firestore.FieldValue.arrayUnion(withdrawalRecord),
+                  saldo: firebase.firestore.FieldValue.increment(-amount)
+                });
+                alert("Solicitação de saque registrada. Aguarde aprovação do administrador.");
+                window.location.hash = "#client";
+              } catch (error) {
+                alert("Erro ao registrar saque: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "amount", className: "block text-gray-700 mb-1" }, "Valor do Saque (R$)"),
+            createElement("input", {
+              type: "number",
+              id: "amount",
+              name: "amount",
+              min: "1",
+              step: "0.01",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            })
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700 transition"
+            },
+            "Solicitar Saque"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // NEW INVESTMENT PAGE
+    function renderNewInvestment(days) {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-12 p-6 bg-white rounded-lg shadow-md" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center mb-6" },
+          createElement("h1", { className: "text-2xl font-semibold text-blue-700" }, `Novo Investimento - ${days} dia${days > 1 ? "s" : ""}`),
+          createElement(
+            "button",
+            {
+              className: "text-gray-600 hover:text-gray-900",
+              onclick: () => {
+                window.location.hash = "#client";
+              }
+            },
+            createElement("i", { className: "fas fa-arrow-left mr-2" }),
+            "Voltar"
+          )
+        ),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const amount = parseFloat(e.target.amount.value);
+              if (isNaN(amount) || amount <= 0) {
+                alert("Digite um valor válido para investimento.");
+                return;
+              }
+              if (amount > currentUserData.saldo) {
+                alert("Saldo insuficiente.");
+                return;
+              }
+              try {
+                // Deduct saldo and add investment
+                const investment = {
+                  amount,
+                  startTimestamp: Date.now(),
+                  durationDays: days,
+                  status: "active"
+                };
+                await db.collection("users").doc(currentUser.uid).update({
+                  saldo: firebase.firestore.FieldValue.increment(-amount),
+                  investments: firebase.firestore.FieldValue.arrayUnion(investment)
+                });
+                alert("Investimento realizado com sucesso!");
+                window.location.hash = "#client";
+              } catch (error) {
+                alert("Erro ao realizar investimento: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "amount", className: "block text-gray-700 mb-1" }, "Valor do Investimento (R$)"),
+            createElement("input", {
+              type: "number",
+              id: "amount",
+              name: "amount",
+              min: "1",
+              step: "0.01",
+              required: true,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            },
+            "Investir"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // ADMIN DASHBOARD
+    async function renderAdminDashboard() {
+      app.innerHTML = "";
+      // Load all users for management
+      const usersSnapshot = await db.collection("users").orderBy("createdAt", "desc").get();
+      const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Load coupons
+      const couponsSnapshot = await db.collection("coupons").orderBy("createdAt", "desc").get();
+      const coupons = couponsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Load logs (for simplicity, logs stored in collection "logs")
+      const logsSnapshot = await db.collection("logs").orderBy("timestamp", "desc").limit(50).get();
+      const logs = logsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Container
+      const container = createElement(
+        "div",
+        { className: "max-w-7xl mx-auto mt-6 p-6 bg-white rounded-lg shadow-md flex flex-col space-y-6" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center" },
+          createElement("h1", { className: "text-3xl font-semibold text-red-700" }, "Painel Administrativo - Belcoin"),
+          createElement(
+            "button",
+            {
+              className: "text-gray-600 hover:text-gray-900",
+              onclick: async () => {
+                await auth.signOut();
+                window.location.hash = "#login";
+              }
+            },
+            createElement("i", { className: "fas fa-sign-out-alt mr-2" }),
+            "Sair"
+          )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Usuários"),
+          users.length === 0
+            ? createElement("p", { className: "text-gray-600" }, "Nenhum usuário cadastrado.")
+            : createElement(
+                "div",
+                { className: "overflow-x-auto" },
+                createElement(
+                  "table",
+                  { className: "min-w-full table-auto border-collapse border border-gray-300" },
+                  createElement(
+                    "thead",
+                    { className: "bg-red-100" },
+                    createElement(
+                      "tr",
+                      {},
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-left" }, "Nome"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-left" }, "E-mail"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-left" }, "CPF"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-left" }, "Telefone"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-right" }, "Saldo"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-left" }, "Role"),
+                      createElement("th", { className: "border border-gray-300 px-3 py-2 text-center" }, "Ações")
+                    )
+                  ),
+                  createElement(
+                    "tbody",
+                    {},
+                    ...users.map((user) => {
+                      return createElement(
+                        "tr",
+                        { className: "hover:bg-red-50" },
+                        createElement("td", { className: "border border-gray-300 px-3 py-2" }, user.name || ""),
+                        createElement("td", { className: "border border-gray-300 px-3 py-2" }, user.email || ""),
+                        createElement("td", { className: "border border-gray-300 px-3 py-2" }, formatCPF(user.cpf || "")),
+                        createElement("td", { className: "border border-gray-300 px-3 py-2" }, formatPhone(user.phone || "")),
+                        createElement("td", { className: "border border-gray-300 px-3 py-2 text-right font-mono" }, formatCurrency(user.saldo || 0)),
+                        createElement("td", { className: "border border-gray-300 px-3 py-2" }, user.role || "client"),
+                        createElement(
+                          "td",
+                          { className: "border border-gray-300 px-3 py-2 text-center space-x-2" },
+                          createElement(
+                            "button",
+                            {
+                              className: "text-blue-600 hover:text-blue-800",
+                              onclick: () => {
+                                renderEditUser(user);
+                              }
+                            },
+                            createElement("i", { className: "fas fa-edit" })
+                          ),
+                          createElement(
+                            "button",
+                            {
+                              className: "text-red-600 hover:text-red-800",
+                              onclick: async () => {
+                                if (confirm(`Excluir conta do usuário ${user.name}? Esta ação é irreversível.`)) {
+                                  try {
+                                    await db.collection("users").doc(user.id).delete();
+                                    alert("Usuário excluído com sucesso.");
+                                    renderAdminDashboard();
+                                  } catch (error) {
+                                    alert("Erro ao excluir usuário: " + error.message);
+                                  }
+                                }
+                              }
+                            },
+                            createElement("i", { className: "fas fa-trash-alt" })
+                          )
+                        )
+                      );
+                    })
+                  )
+                )
+              )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Gerenciamento de Cupons"),
+          createElement(
+            "form",
+            {
+              className: "mb-6 space-y-4",
+              onsubmit: async (e) => {
+                e.preventDefault();
+                const code = e.target.code.value.trim().toUpperCase();
+                const value = parseFloat(e.target.value.value);
+                const expired = e.target.expired.checked;
+                if (!code || isNaN(value) || value <= 0) {
+                  alert("Preencha corretamente o código e o valor do cupom.");
+                  return;
+                }
+                try {
+                  await db.collection("coupons").doc(code).set({
+                    value,
+                    expired,
+                    createdAt: Date.now()
+                  });
+                  alert("Cupom criado/atualizado com sucesso.");
+                  e.target.reset();
+                  renderAdminDashboard();
+                } catch (error) {
+                  alert("Erro ao criar cupom: " + error.message);
+                }
+              }
+            },
+            createElement(
+              "div",
+              { className: "flex flex-col md:flex-row md:space-x-4" },
+              createElement(
+                "div",
+                { className: "flex-grow" },
+                createElement("label", { htmlFor: "code", className: "block text-gray-700 mb-1" }, "Código do Cupom"),
+                createElement("input", {
+                  type: "text",
+                  id: "code",
+                  name: "code",
+                  required: true,
+                  className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                })
+              ),
+              createElement(
+                "div",
+                { className: "w-32" },
+                createElement("label", { htmlFor: "value", className: "block text-gray-700 mb-1" }, "Valor (R$)"),
+                createElement("input", {
+                  type: "number",
+                  id: "value",
+                  name: "value",
+                  min: "0.01",
+                  step: "0.01",
+                  required: true,
+                  className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                })
+              ),
+              createElement(
+                "div",
+                { className: "flex items-center mt-6 md:mt-0" },
+                createElement("input", {
+                  type: "checkbox",
+                  id: "expired",
+                  name: "expired",
+                  className: "mr-2"
+                }),
+                createElement("label", { htmlFor: "expired", className: "text-gray-700" }, "Expirado")
+              )
+            ),
+            createElement(
+              "button",
+              {
+                type: "submit",
+                className: "bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition"
+              },
+              "Criar/Atualizar Cupom"
+            )
+          ),
+          coupons.length === 0
+            ? createElement("p", { className: "text-gray-600" }, "Nenhum cupom cadastrado.")
+            : createElement(
+                "table",
+                { className: "min-w-full table-auto border-collapse border border-gray-300" },
+                createElement(
+                  "thead",
+                  { className: "bg-red-100" },
+                  createElement(
+                    "tr",
+                    {},
+                    createElement("th", { className: "border border-gray-300 px-3 py-2" }, "Código"),
+                    createElement("th", { className: "border border-gray-300 px-3 py-2" }, "Valor (R$)"),
+                    createElement("th", { className: "border border-gray-300 px-3 py-2" }, "Expirado"),
+                    createElement("th", { className: "border border-gray-300 px-3 py-2" }, "Criado em"),
+                    createElement("th", { className: "border border-gray-300 px-3 py-2" }, "Ações")
+                  )
+                ),
+                createElement(
+                  "tbody",
+                  {},
+                  ...coupons.map((coupon) => {
+                    return createElement(
+                      "tr",
+                      { className: "hover:bg-red-50" },
+                      createElement("td", { className: "border border-gray-300 px-3 py-2 font-mono" }, coupon.id),
+                      createElement("td", { className: "border border-gray-300 px-3 py-2 text-right font-mono" }, formatCurrency(coupon.value)),
+                      createElement("td", { className: "border border-gray-300 px-3 py-2 text-center" }, coupon.expired ? "Sim" : "Não"),
+                      createElement("td", { className: "border border-gray-300 px-3 py-2" }, formatDate(coupon.createdAt)),
+                      createElement(
+                        "td",
+                        { className: "border border-gray-300 px-3 py-2 text-center" },
+                        createElement(
+                          "button",
+                          {
+                            className: "text-red-600 hover:text-red-800",
+                            onclick: async () => {
+                              if (confirm(`Excluir cupom ${coupon.id}?`)) {
+                                try {
+                                  await db.collection("coupons").doc(coupon.id).delete();
+                                  alert("Cupom excluído com sucesso.");
+                                  renderAdminDashboard();
+                                } catch (error) {
+                                  alert("Erro ao excluir cupom: " + error.message);
+                                }
+                              }
+                            }
+                          },
+                          createElement("i", { className: "fas fa-trash-alt" })
+                        )
+                      )
+                    );
+                  })
+                )
+              )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Logs Recentes"),
+          logs.length === 0
+            ? createElement("p", { className: "text-gray-600" }, "Nenhum log registrado.")
+            : createElement(
+                "ul",
+                { className: "max-h-64 overflow-y-auto space-y-1 font-mono text-sm text-gray-700 bg-gray-50 p-3 rounded" },
+                ...logs.map((log) => {
+                  return createElement(
+                    "li",
+                    {},
+                    `[${new Date(log.timestamp).toLocaleString()}] ${log.message}`
+                  );
+                })
+              )
+        ),
+        createElement(
+          "section",
+          {},
+          createElement("h2", { className: "text-2xl font-semibold mb-4 text-gray-800" }, "Estatísticas"),
+          createElement(
+            "div",
+            { className: "grid grid-cols-1 md:grid-cols-3 gap-6" },
+            createElement(
+              "div",
+              { className: "bg-red-50 p-4 rounded-lg shadow-inner" },
+              createElement("h3", { className: "text-lg font-semibold mb-2" }, "Total de Usuários"),
+              createElement("p", { className: "text-3xl font-bold text-red-700" }, users.length)
+            ),
+            createElement(
+              "div",
+              { className: "bg-red-50 p-4 rounded-lg shadow-inner" },
+              createElement("h3", { className: "text-lg font-semibold mb-2" }, "Total de Depósitos (pendentes e confirmados)"),
+              createElement(
+                "p",
+                { className: "text-3xl font-bold text-red-700" },
+                formatCurrency(
+                  users.reduce((acc, u) => {
+                    if (u.depositHistory && u.depositHistory.length > 0) {
+                      return acc + u.depositHistory.reduce((a, d) => a + (d.amount || 0), 0);
+                    }
+                    return acc;
+                  }, 0)
+                )
+              )
+            ),
+            createElement(
+              "div",
+              { className: "bg-red-50 p-4 rounded-lg shadow-inner" },
+              createElement("h3", { className: "text-lg font-semibold mb-2" }, "Total de Saques (pendentes e aprovados)"),
+              createElement(
+                "p",
+                { className: "text-3xl font-bold text-red-700" },
+                formatCurrency(
+                  users.reduce((acc, u) => {
+                    if (u.withdrawalHistory && u.withdrawalHistory.length > 0) {
+                      return acc + u.withdrawalHistory.reduce((a, w) => a + (w.amount || 0), 0);
+                    }
+                    return acc;
+                  }, 0)
+                )
+              )
+            )
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // EDIT USER PAGE (ADMIN)
+    function renderEditUser(user) {
+      app.innerHTML = "";
+      const container = createElement(
+        "div",
+        { className: "max-w-md mx-auto mt-12 p-6 bg-white rounded-lg shadow-md" },
+        createElement(
+          "header",
+          { className: "flex justify-between items-center mb-6" },
+          createElement("h1", { className: "text-2xl font-semibold text-blue-700" }, `Editar Usuário - ${user.name}`),
+          createElement(
+            "button",
+            {
+              className: "text-gray-600 hover:text-gray-900",
+              onclick: () => {
+                renderAdminDashboard();
+              }
+            },
+            createElement("i", { className: "fas fa-arrow-left mr-2" }),
+            "Voltar"
+          )
+        ),
+        createElement(
+          "form",
+          {
+            onsubmit: async (e) => {
+              e.preventDefault();
+              const name = e.target.name.value.trim();
+              const email = e.target.email.value.trim();
+              const cpf = e.target.cpf.value.trim().replace(/\D/g, "");
+              const phone = e.target.phone.value.trim().replace(/\D/g, "");
+              const saldo = parseFloat(e.target.saldo.value);
+              const role = e.target.role.value;
+              const withdrawalBlocked = e.target.withdrawalBlocked.checked;
+              if (!name || !email || !cpf || !phone || isNaN(saldo)) {
+                alert("Preencha todos os campos corretamente.");
+                return;
+              }
+              try {
+                await db.collection("users").doc(user.id).update({
+                  name,
+                  email,
+                  cpf,
+                  phone,
+                  saldo,
+                  role,
+                  withdrawalBlocked
+                });
+                alert("Usuário atualizado com sucesso.");
+                renderAdminDashboard();
+              } catch (error) {
+                alert("Erro ao atualizar usuário: " + error.message);
+              }
+            },
+            className: "space-y-4"
+          },
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "name", className: "block text-gray-700 mb-1" }, "Nome"),
+            createElement("input", {
+              type: "text",
+              id: "name",
+              name: "name",
+              required: true,
+              value: user.name || "",
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "email", className: "block text-gray-700 mb-1" }, "E-mail"),
+            createElement("input", {
+              type: "email",
+              id: "email",
+              name: "email",
+              required: true,
+              value: user.email || "",
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "cpf", className: "block text-gray-700 mb-1" }, "CPF"),
+            createElement("input", {
+              type: "text",
+              id: "cpf",
+              name: "cpf",
+              maxLength: 14,
+              required: true,
+              value: formatCPF(user.cpf || ""),
+              oninput: (e) => {
+                e.target.value = formatCPF(e.target.value);
+              },
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "phone", className: "block text-gray-700 mb-1" }, "Telefone"),
+            createElement("input", {
+              type: "text",
+              id: "phone",
+              name: "phone",
+              maxLength: 15,
+              required: true,
+              value: formatPhone(user.phone || ""),
+              oninput: (e) => {
+                e.target.value = formatPhone(e.target.value);
+              },
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "saldo", className: "block text-gray-700 mb-1" }, "Saldo (R$)"),
+            createElement("input", {
+              type: "number",
+              id: "saldo",
+              name: "saldo",
+              min: "0",
+              step: "0.01",
+              required: true,
+              value: user.saldo || 0,
+              className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            })
+          ),
+          createElement(
+            "div",
+            {},
+            createElement("label", { htmlFor: "role", className: "block text-gray-700 mb-1" }, "Cargo"),
+            createElement(
+              "select",
+              {
+                id: "role",
+                name: "role",
+                required: true,
+                className: "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              },
+              createElement("option", { value: "client", selected: user.role === "client" }, "Cliente"),
+              createElement("option", { value: "adminMaster", selected: user.role === "adminMaster" }, "Admin Master"),
+              createElement("option", { value: "suporte", selected: user.role === "suporte" }, "Suporte"),
+              createElement("option", { value: "social", selected: user.role === "social" }, "Social")
+            )
+          ),
+          createElement(
+            "div",
+            { className: "flex items-center space-x-2" },
+            createElement("input", {
+              type: "checkbox",
+              id: "withdrawalBlocked",
+              name: "withdrawalBlocked",
+              checked: user.withdrawalBlocked !== false,
+              className: "mr-2"
+            }),
+            createElement("label", { htmlFor: "withdrawalBlocked", className: "text-gray-700" }, "Bloquear Saque Automático")
+          ),
+          createElement(
+            "button",
+            {
+              type: "submit",
+              className: "w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+            },
+            "Salvar Alterações"
+          )
+        )
+      );
+      app.appendChild(container);
+    }
+
+    // INITIAL ROUTE
+    window.addEventListener("hashchange", router);
+    router();
+  </script>
+</body>
+  </html>
