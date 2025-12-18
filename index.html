@@ -1,139 +1,148 @@
-<!doctype html>
-
-<html lang="pt-BR">
+<!DOCTYPE html><html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Construção de Cabanas para Airbnb — RS</title>
-  <meta name="description" content="Construímos cabanas sob medida para você investir no Airbnb. Projetos sustentáveis, aconchegantes e prontos para hóspedes." />
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GatoPlay — Core HTML</title>
+<style>
+:root{--roxo:#4b1fa6;--roxo2:#2e0f6e;--amarelo:#ffe600}
+*{box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+body{margin:0;background:linear-gradient(180deg,var(--roxo2),var(--roxo));color:#fff}
+.hidden{display:none}
+header{background:#3b178f;padding:12px;display:flex;justify-content:space-between;align-items:center}
+.badge{background:#2a0d66;padding:6px 12px;border-radius:20px}
+.pix{background:var(--amarelo);color:#000;padding:6px 10px;border-radius:10px;font-weight:bold}
+.container{padding:16px}
+.card{background:#4b1fa6;border-radius:16px;padding:16px;margin-bottom:16px}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--amarelo);color:#000;font-weight:bold;font-size:16px;cursor:pointer}
+.btn-sec{background:#3b178f;color:#fff}
+input{width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:10px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#3b178f;display:flex;justify-content:space-around;padding:10px 0}
+footer button{background:none;border:none;color:#fff;font-size:12px;cursor:pointer}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.center{text-align:center}
+</style>
 </head>
-<body class="antialiased bg-slate-50 text-slate-800">
-  <header class="bg-wood-50 bg-gradient-to-r from-amber-50 via-emerald-50 to-amber-50 shadow">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="rounded-full bg-green-700 text-white font-bold w-12 h-12 flex items-center justify-center">CB</div>
-        <div>
-          <h1 class="text-lg font-semibold">Cabanas para Airbnb</h1>
-          <p class="text-sm text-slate-600">Construção e projetos prontos para hospedagem</p>
-        </div>
-      </div>
-      <nav class="hidden md:flex gap-6 items-center text-sm">
-        <a href="#inicio" class="hover:underline">Início</a>
-        <a href="#sobre" class="hover:underline">Sobre</a>
-        <a href="#servicos" class="hover:underline">Serviços</a>
-        <a href="#galeria" class="hover:underline">Galeria</a>
-        <a href="#contato" class="hover:underline">Contato</a>
-      </nav>
-      <div class="md:hidden">
-        <button id="menuBtn" aria-label="Abrir menu" class="p-2">☰</button>
-      </div>
+<body><!-- LOGIN --><div id="login" class="container">
+  <div class="card">
+    <h2>Login</h2>
+    <input id="lUser" placeholder="Usuário" />
+    <input id="lPass" type="password" placeholder="Senha" />
+    <button class="btn" onclick="doLogin()">Entrar</button>
+    <p class="center" onclick="show('register')">Criar conta</p>
+  </div>
+</div><!-- CADASTRO --><div id="register" class="container hidden">
+  <div class="card">
+    <h2>Cadastro</h2>
+    <input id="rUser" placeholder="Usuário" />
+    <input id="rPass" type="password" placeholder="Senha" />
+    <button class="btn" onclick="doRegister()">Cadastrar</button>
+    <p class="center" onclick="show('login')">Voltar</p>
+  </div>
+</div><!-- HOME --><div id="home" class="hidden">
+<header>
+  <strong>GatoPlay</strong>
+  <div><span class="badge" id="saldoBadge">R$ 0</span> <span class="pix">PIX+</span></div>
+</header>
+<div class="container">
+  <div class="card">
+    <h3 id="hello"></h3>
+    <p>Plano Gratuito • Nível Não ranqueado</p>
+  </div>
+  <div class="card">
+    <h3>Jogos</h3>
+    <div class="row">
+      <button class="btn" onclick="show('slot')">🎰 Slot</button>
+      <button class="btn" onclick="show('crash')">🚀 Crash</button>
     </div>
-  </header>  <!-- Hero -->  <section id="inicio" class="bg-white">
-    <div class="max-w-6xl mx-auto px-6 py-12 grid md:grid-cols-2 gap-8 items-center">
-      <div>
-        <h2 class="text-3xl md:text-4xl font-extrabold leading-tight">Nós construímos cabanas para você lucrar no Airbnb</h2>
-        <p class="mt-4 text-slate-600">Projetos sob medida, sustentáveis e confortáveis, pensados para maximizar o retorno do seu investimento em hospedagem.</p>
-        <ul class="mt-6 space-y-2 text-slate-700">
-          <li>✅ Construção rápida e de alta qualidade</li>
-          <li>✅ Materiais sustentáveis e duráveis</li>
-          <li>✅ Design otimizado para atrair hóspedes</li>
-        </ul>
-        <div class="mt-6 flex gap-3">
-          <a href="https://wa.me/555197663477" target="_blank" class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold shadow">💬 Chamar no WhatsApp</a>
-          <a href="#contato" class="inline-flex items-center gap-2 bg-white border border-slate-200 px-4 py-3 rounded-lg font-semibold">📩 Solicitar Orçamento</a>
-        </div>
-        <p class="mt-4 text-sm text-slate-500">Telefone: <strong>(51) 9766-3477</strong></p>
-      </div>
-      <div>
-        <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Construção de cabana" class="rounded-lg shadow-md w-full object-cover h-64 md:h-80" />
-      </div>
+  </div>
+  <div class="card">
+    <h3>Depósito (simulado)</h3>
+    <div class="row">
+      <button class="btn-sec" onclick="deposit(50)">+ R$50</button>
+      <button class="btn-sec" onclick="deposit(100)">+ R$100</button>
     </div>
-  </section>  <!-- Sobre -->  <section id="sobre" class="max-w-6xl mx-auto px-6 py-12">
-    <div class="grid md:grid-cols-3 gap-8 items-start">
-      <div class="md:col-span-2">
-        <h3 class="text-2xl font-bold">Sobre nós</h3>
-        <p class="mt-4 text-slate-600">Somos especializados em **construir cabanas** rústicas e modernas para quem deseja investir em aluguel por temporada. Entregamos espaços prontos para fotos, anúncios e receber hóspedes com conforto.</p>
-      </div>
-      <div class="bg-white rounded-lg p-6 shadow">
-        <h4 class="font-bold">Por que escolher a gente?</h4>
-        <p class="mt-3 text-slate-600">Projetos sob medida, baixo custo de manutenção e atenção aos detalhes que geram boas avaliações no Airbnb.</p>
-        <div class="mt-4">
-          <a href="https://wa.me/555197663477" target="_blank" class="block text-center bg-green-600 text-white px-4 py-3 rounded-lg font-semibold">Fale pelo WhatsApp</a>
-          <p class="mt-3 text-sm text-slate-500">(51) 9766-3477</p>
-        </div>
-      </div>
-    </div>
-  </section>  <!-- Serviços -->  <section id="servicos" class="bg-slate-50 py-12">
-    <div class="max-w-6xl mx-auto px-6">
-      <h3 class="text-2xl font-bold">Nossos serviços</h3>
-      <ul class="mt-4 space-y-3 text-slate-700 list-disc list-inside">
-        <li>Construção de cabanas em madeira e materiais sustentáveis</li>
-        <li>Projetos arquitetônicos para aluguel por temporada</li>
-        <li>Montagem e acabamento prontos para fotos</li>
-        <li>Consultoria para anúncios no Airbnb</li>
-      </ul>
-    </div>
-  </section>  <!-- Galeria -->  <section id="galeria" class="py-12">
-    <div class="max-w-6xl mx-auto px-6">
-      <h3 class="text-2xl font-bold">Galeria</h3>
-      <p class="mt-2 text-slate-600">Alguns exemplos de cabanas construídas (imagens ilustrativas).</p>
-      <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <img class="w-full h-48 object-cover rounded-lg shadow" src="https://images.unsplash.com/photo-1505691723518-36a0d3b26f3b?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Cabana 1">
-        <img class="w-full h-48 object-cover rounded-lg shadow" src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Cabana 2">
-        <img class="w-full h-48 object-cover rounded-lg shadow" src="https://images.unsplash.com/photo-1528909514045-2fa4ac7a08ba?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=placeholder" alt="Cabana 3">
-      </div>
-    </div>
-  </section>  <!-- Contato -->  <section id="contato" class="max-w-6xl mx-auto px-6 py-12">
-    <div class="grid md:grid-cols-2 gap-8 items-start">
-      <div>
-        <h3 class="text-2xl font-bold">Solicite um orçamento</h3>
-        <p class="mt-3 text-slate-600">Fale conosco pelo WhatsApp ou envie uma mensagem com suas ideias de projeto.</p>
-        <div class="mt-6 space-y-4">
-          <div>
-            <p class="text-sm text-slate-500">WhatsApp</p>
-            <a href="https://wa.me/555197663477" target="_blank" class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg font-semibold">💬 (51) 9766-3477</a>
-          </div>
-          <div>
-            <p class="text-sm text-slate-500">Atendimento</p>
-            <p class="font-medium">Segunda - Sexta, 09:00 - 18:00</p>
-          </div>
-        </div>
-      </div>
-      <div>
-        <form id="contactForm" class="bg-white p-6 rounded-lg shadow" onsubmit="return handleSubmit(event)">
-          <label class="block text-sm font-medium">Nome</label>
-          <input type="text" id="name" required class="mt-1 block w-full border border-slate-200 rounded px-3 py-2" />
-          <label class="block text-sm font-medium mt-4">Email</label>
-          <input type="email" id="email" required class="mt-1 block w-full border border-slate-200 rounded px-3 py-2" />
-          <label class="block text-sm font-medium mt-4">Mensagem</label>
-          <textarea id="message" required class="mt-1 block w-full border border-slate-200 rounded px-3 py-2 h-28"></textarea>
-          <div class="mt-4 flex gap-3">
-            <button type="submit" class="bg-amber-600 text-white px-4 py-2 rounded font-semibold">Enviar mensagem</button>
-            <a href="https://wa.me/555197663477" target="_blank" class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded">WhatsApp</a>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>  <footer class="border-t bg-white">
-    <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-      <p class="text-sm text-slate-600">© <span id="year"></span> Construção de Cabanas para Airbnb — Todos os direitos reservados</p>
-      <div class="flex gap-3">
-        <a href="#" aria-label="Instagram" class="text-slate-500 hover:text-slate-800">Instagram</a>
-        <a href="#" aria-label="Facebook" class="text-slate-500 hover:text-slate-800">Facebook</a>
-      </div>
-    </div>
-  </footer>  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-    function handleSubmit(e) {
-      e.preventDefault();
-      const name = document.getElementById('name').value;
-      alert('Obrigado, ' + name + '! Entraremos em contato pelo WhatsApp.');
-      e.target.reset();
-      return false;
-    }
-  </script>  <style>
-    :root{ --wood:#a16a3b; }
-    .bg-wood-50{ background-image: linear-gradient(90deg, rgba(239,246,233,0.6), rgba(255,250,240,0.6)); }
-  </style></body>
-          </html>
+  </div>
+</div>
+<footer>
+  <button onclick="show('home')">Home</button>
+  <button onclick="show('slot')">Slot</button>
+  <button onclick="show('crash')">Crash</button>
+  <button onclick="logout()">Sair</button>
+</footer>
+</div><!-- SLOT --><div id="slot" class="container hidden">
+  <div class="card center">
+    <h2>🎰 Slot</h2>
+    <h1 id="slotRes">🍒 🍒 🍒</h1>
+    <p>Custo: R$10 • Prêmio: R$50</p>
+    <button class="btn" onclick="spin()">Girar</button>
+    <button class="btn-sec" onclick="show('home')">Voltar</button>
+  </div>
+</div><!-- CRASH --><div id="crash" class="container hidden">
+  <div class="card center">
+    <h2>🚀 Crash</h2>
+    <h1 id="mult">1.00x</h1>
+    <p>Aposta: R$10</p>
+    <button class="btn" onclick="startCrash()">Iniciar</button>
+    <button class="btn-sec" onclick="cashout()">Sacar</button>
+    <button class="btn-sec" onclick="show('home')">Voltar</button>
+  </div>
+</div><script>
+// ======= CORE =======
+const DB_KEY='gp_users_v1';
+let users=JSON.parse(localStorage.getItem(DB_KEY)||'{}');
+let current=null;
+let crashTimer=null, mult=1;
+
+function save(){localStorage.setItem(DB_KEY,JSON.stringify(users));}
+function show(id){document.querySelectorAll('body>div').forEach(d=>d.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');}
+function updateUI(){document.getElementById('hello').innerText='Olá, '+current;document.getElementById('saldoBadge').innerText='R$ '+users[current].saldo;}
+
+// ======= AUTH =======
+function doRegister(){
+  const u=rUser.value.trim(), p=rPass.value;
+  if(!u||!p) return alert('Preencha tudo');
+  if(users[u]) return alert('Usuário existe');
+  users[u]={pass:p,saldo:100}; save(); alert('Conta criada! Bônus R$100'); show('login');
+}
+function doLogin(){
+  const u=lUser.value.trim(), p=lPass.value;
+  if(users[u]?.pass!==p) return alert('Login inválido');
+  current=u; show('home'); updateUI();
+}
+function logout(){current=null; location.reload();}
+
+// ======= MONEY =======
+function deposit(v){users[current].saldo+=v; save(); updateUI();}
+function canPay(v){if(users[current].saldo<v){alert('Saldo insuficiente');return false;} return true;}
+
+// ======= SLOT =======
+function spin(){
+  if(!canPay(10)) return;
+  users[current].saldo-=10;
+  const icons=['🍒','🍋','💎'];
+  const r=[0,1,2].map(()=>icons[Math.floor(Math.random()*3)]);
+  slotRes.innerText=r.join(' ');
+  if(r[0]===r[1] && r[1]===r[2]) users[current].saldo+=50;
+  save(); updateUI();
+}
+
+// ======= CRASH =======
+function startCrash(){
+  if(!canPay(10)) return;
+  users[current].saldo-=10; save(); updateUI();
+  mult=1; multEl();
+  clearInterval(crashTimer);
+  crashTimer=setInterval(()=>{
+    mult+=0.1; multEl();
+    if(Math.random()<0.06){ clearInterval(crashTimer); alert('Crash!'); }
+  },300);
+}
+function cashout(){
+  if(!crashTimer) return;
+  clearInterval(crashTimer);
+  users[current].saldo+=Math.floor(mult*10);
+  save(); updateUI();
+}
+function multEl(){document.getElementById('mult').innerText=mult.toFixed(2)+'x';}
+</script></body>
+</html>
