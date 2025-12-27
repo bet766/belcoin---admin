@@ -1,170 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Chat App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat</title>
 
 <style>
 body {
-  margin: 0;
+  margin:0;
   font-family: Arial, sans-serif;
   background: linear-gradient(135deg,#00c6ff,#0072ff);
-  color:#fff;
-}
-.hidden { display:none }
-.center {
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
 .card {
   background:#fff;
-  color:#000;
+  max-width:350px;
+  margin:100px auto;
   padding:20px;
   border-radius:12px;
-  width:100%;
-  max-width:400px;
 }
 input,button {
   width:100%;
   padding:10px;
   margin:6px 0;
-  border-radius:6px;
-  border:1px solid #ccc;
 }
 button {
   background:#0072ff;
   color:#fff;
   border:none;
 }
-.chat {
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
-.messages {
-  flex:1;
-  padding:10px;
-  overflow-y:auto;
-}
-.msg {
-  margin:6px 0;
-  padding:8px;
-  border-radius:8px;
-  max-width:70%;
-}
-.me { background:#0072ff;color:#fff;align-self:flex-end }
-.other { background:#eee;color:#000 }
-.footer {
-  display:flex;
-}
-.footer input {
-  flex:1;
-}
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
-<div id="login" class="center">
-  <div class="card">
-    <h2>Login</h2>
-    <input id="loginEmail" placeholder="Email">
-    <input id="loginPass" type="password" placeholder="Senha">
-    <button onclick="login()">Entrar</button>
-    <button onclick="show('register')">Cadastrar</button>
-    <button onclick="resetPass()">Esqueci a senha</button>
-  </div>
+<div class="card">
+  <h2>Login</h2>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Senha">
+  <button onclick="login()">Entrar</button>
+  <button onclick="register()">Cadastrar</button>
 </div>
 
-<!-- REGISTER -->
-<div id="register" class="center hidden">
-  <div class="card">
-    <h2>Cadastro</h2>
-    <input id="regName" placeholder="Nome">
-    <input id="regEmail" placeholder="Email">
-    <input id="regPass" type="password" placeholder="Senha">
-    <button onclick="register()">Criar conta</button>
-    <button onclick="show('login')">Voltar</button>
-  </div>
-</div>
-
-<!-- CHAT -->
-<div id="chat" class="chat hidden">
-  <div class="messages" id="messages"></div>
-  <div class="footer">
-    <input id="msg" placeholder="Digite..." oninput="typing()">
-    <button onclick="send()">Enviar</button>
-  </div>
-</div>
-
+<!-- FIREBASE CDN (OBRIGATÓRIO) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_AUTH_DOMAIN",
-  projectId: "SEU_PROJECT_ID",
+  apiKey: "SUA_API_KEY_AQUI",
+  authDomain: "chat-a1210.firebaseapp.com",
+  projectId: "chat-a1210",
 };
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.firestore();
 
-function show(id){
-  document.querySelectorAll('body>div').forEach(d=>d.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
+function login(){
+  auth.signInWithEmailAndPassword(
+    email.value, password.value
+  ).then(()=>alert("Logado"))
+   .catch(e=>alert(e.message));
 }
 
 function register(){
   auth.createUserWithEmailAndPassword(
-    regEmail.value, regPass.value
-  ).then(res=>{
-    db.collection("users").doc(res.user.uid).set({
-      name: regName.value,
-      code: res.user.uid.substring(0,6)
-    });
-    show('chat');
-  }).catch(alert);
+    email.value, password.value
+  ).then(()=>alert("Conta criada"))
+   .catch(e=>alert(e.message));
 }
-
-function login(){
-  auth.signInWithEmailAndPassword(
-    loginEmail.value, loginPass.value
-  ).then(()=>show('chat')).catch(alert);
-}
-
-function resetPass(){
-  auth.sendPasswordResetEmail(loginEmail.value)
-  .then(()=>alert("Email enviado"));
-}
-
-function send(){
-  db.collection("messages").add({
-    text: msg.value,
-    uid: auth.currentUser.uid,
-    time: Date.now()
-  });
-  msg.value="";
-}
-
-db.collection("messages")
-.orderBy("time")
-.onSnapshot(snap=>{
-  messages.innerHTML="";
-  snap.forEach(d=>{
-    let m = d.data();
-    let div=document.createElement("div");
-    div.className="msg "+(m.uid==auth.currentUser.uid?"me":"other");
-    div.innerText=m.text;
-    messages.appendChild(div);
-  });
-});
 </script>
 
 </body>
