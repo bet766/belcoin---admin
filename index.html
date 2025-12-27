@@ -2,200 +2,226 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat App</title>
+<title>Chat Firebase</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-  font-family: Arial, sans-serif;
-}
-
 body {
-  margin: 0;
-  background: linear-gradient(135deg, #00c853, #0091ea);
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin:0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg,#0f9b8e,#0a3d62);
+  color:#fff;
 }
 
 .container {
-  width: 360px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.2);
-  overflow: hidden;
+  max-width:400px;
+  margin:40px auto;
+  background:#fff;
+  color:#000;
+  padding:20px;
+  border-radius:10px;
 }
 
-.tabs {
-  display: flex;
+h2 { text-align:center }
+
+input, button {
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 
-.tabs button {
-  flex: 1;
-  padding: 15px;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  background: #e0e0e0;
+button {
+  background:#0f9b8e;
+  color:#fff;
+  border:none;
+  font-size:16px;
 }
 
-.tabs button.active {
-  background: #00c853;
-  color: #fff;
-  font-weight: bold;
+.link {
+  text-align:center;
+  margin-top:10px;
+  color:#0f9b8e;
+  cursor:pointer;
 }
 
-.form {
-  padding: 20px;
-  display: none;
+/* CHAT */
+#chatBox {
+  height:300px;
+  overflow-y:auto;
+  background:#f1f1f1;
+  padding:10px;
+  border-radius:6px;
 }
 
-.form.active {
-  display: block;
+.msg {
+  margin:6px 0;
+  padding:8px;
+  border-radius:6px;
+  max-width:80%;
 }
 
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
+.me { background:#c8f7c5; margin-left:auto }
+.other { background:#ddd }
 
-input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 15px;
-}
-
-button.action {
-  width: 100%;
-  padding: 12px;
-  background: #0091ea;
-  border: none;
-  color: white;
-  font-size: 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-button.action:hover {
-  opacity: 0.9;
-}
+.hidden { display:none }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="tabs">
-    <button id="tabLogin" class="active">Login</button>
-    <button id="tabCadastro">Cadastro</button>
-  </div>
-
-  <!-- LOGIN -->
-  <div id="loginForm" class="form active">
-    <h2>Entrar</h2>
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginSenha" placeholder="Senha">
-    <button class="action" onclick="login()">Entrar</button>
-  </div>
-
-  <!-- CADASTRO -->
-  <div id="cadastroForm" class="form">
-    <h2>Criar Conta</h2>
-    <input type="text" id="cadNome" placeholder="Nome">
-    <input type="email" id="cadEmail" placeholder="Email">
-    <input type="password" id="cadSenha" placeholder="Senha">
-    <button class="action" onclick="cadastrar()">Cadastrar</button>
-  </div>
+<!-- LOGIN -->
+<div class="container" id="loginScreen">
+  <h2>Login</h2>
+  <input id="loginEmail" placeholder="Email">
+  <input id="loginPass" type="password" placeholder="Senha">
+  <button onclick="login()">Entrar</button>
+  <div class="link" onclick="showRegister()">Criar conta</div>
 </div>
 
-<!-- FIREBASE -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } 
-from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, doc, setDoc } 
-from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+<!-- CADASTRO -->
+<div class="container hidden" id="registerScreen">
+  <h2>Cadastro</h2>
+  <input id="regName" placeholder="Nome">
+  <input id="regEmail" placeholder="Email">
+  <input id="regPass" type="password" placeholder="Senha">
+  <button onclick="register()">Cadastrar</button>
+  <div class="link" onclick="showLogin()">Já tenho conta</div>
+</div>
 
-const firebaseConfig = {
+<!-- CHAT -->
+<div class="container hidden" id="chatScreen">
+  <h2>Chat</h2>
+  <p id="myCode"></p>
+
+  <input id="contactCode" placeholder="Código do contato">
+  <button onclick="openChat()">Abrir conversa</button>
+
+  <div id="chatBox"></div>
+
+  <input id="msgInput" placeholder="Mensagem">
+  <button onclick="sendMsg()">Enviar</button>
+
+  <div class="link" onclick="logout()">Sair</div>
+</div>
+
+<script>
+// 🔥 FIREBASE CONFIG
+firebase.initializeApp({
   apiKey: "AIzaSyCb3qXhVccF5zaM1kT7Y0qSgpyJlltTWSE",
   authDomain: "chat-a1210.firebaseapp.com",
-  projectId: "chat-a1210",
-  storageBucket: "chat-a1210.firebasestorage.app",
-  messagingSenderId: "158588715768",
-  appId: "1:158588715768:web:15d8dd4f109250954cb10d"
-};
+  projectId: "chat-a1210"
+});
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-// ABAS
-const tabLogin = document.getElementById("tabLogin");
-const tabCadastro = document.getElementById("tabCadastro");
-const loginForm = document.getElementById("loginForm");
-const cadastroForm = document.getElementById("cadastroForm");
+let currentChat = null;
 
-tabLogin.onclick = () => {
-  tabLogin.classList.add("active");
-  tabCadastro.classList.remove("active");
-  loginForm.classList.add("active");
-  cadastroForm.classList.remove("active");
-};
+// 🔁 TELAS
+function showRegister() {
+  loginScreen.classList.add("hidden");
+  registerScreen.classList.remove("hidden");
+}
 
-tabCadastro.onclick = () => {
-  tabCadastro.classList.add("active");
-  tabLogin.classList.remove("active");
-  cadastroForm.classList.add("active");
-  loginForm.classList.remove("active");
-};
+function showLogin() {
+  registerScreen.classList.add("hidden");
+  loginScreen.classList.remove("hidden");
+}
 
-// CADASTRO
-window.cadastrar = async () => {
-  const nome = cadNome.value.trim();
-  const email = cadEmail.value.trim();
-  const senha = cadSenha.value.trim();
+// 🔑 CÓDIGO ÚNICO
+function gerarCodigo() {
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
 
-  if (!nome || !email || !senha) {
+// 📝 CADASTRO
+function register() {
+  const name = regName.value;
+  const email = regEmail.value;
+  const pass = regPass.value;
+
+  if(!name || !email || !pass) {
     alert("Preencha todos os campos");
     return;
   }
 
-  try {
-    const userCred = await createUserWithEmailAndPassword(auth, email, senha);
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      nome,
-      email,
-      codigo: Math.floor(100000 + Math.random() * 900000)
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(res => {
+      const code = gerarCodigo();
+      db.collection("users").doc(res.user.uid).set({
+        name, email, code
+      });
+    })
+    .catch(e => alert(e.message));
+}
+
+// 🔓 LOGIN
+function login() {
+  auth.signInWithEmailAndPassword(loginEmail.value, loginPass.value)
+    .catch(e => alert(e.message));
+}
+
+// 🚀 LISTENER DE LOGIN (AQUI ESTAVA O PROBLEMA)
+auth.onAuthStateChanged(user => {
+  if(user) {
+    loginScreen.classList.add("hidden");
+    registerScreen.classList.add("hidden");
+    chatScreen.classList.remove("hidden");
+
+    db.collection("users").doc(user.uid).get()
+      .then(doc => {
+        myCode.innerHTML = "Seu código: <b>" + doc.data().code + "</b>";
+      });
+  }
+});
+
+// 💬 ABRIR CHAT
+async function openChat() {
+  const code = contactCode.value.trim();
+  const snap = await db.collection("users").where("code","==",code).get();
+  if(snap.empty) return alert("Usuário não encontrado");
+
+  const other = snap.docs[0].id;
+  currentChat = [auth.currentUser.uid, other].sort().join("_");
+
+  db.collection("chats").doc(currentChat)
+    .collection("msgs")
+    .orderBy("time")
+    .onSnapshot(s => {
+      chatBox.innerHTML = "";
+      s.forEach(d => {
+        const m = d.data();
+        const div = document.createElement("div");
+        div.className = "msg " + (m.uid === auth.currentUser.uid ? "me" : "other");
+        div.innerText = m.text;
+        chatBox.appendChild(div);
+      });
     });
-    alert("Conta criada com sucesso!");
-    tabLogin.click();
-  } catch (e) {
-    alert(e.message);
-  }
-};
+}
 
-// LOGIN
-window.login = async () => {
-  const email = loginEmail.value.trim();
-  const senha = loginSenha.value.trim();
+// ✉️ ENVIAR
+function sendMsg() {
+  if(!currentChat) return;
+  db.collection("chats").doc(currentChat)
+    .collection("msgs").add({
+      uid: auth.currentUser.uid,
+      text: msgInput.value,
+      time: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  msgInput.value = "";
+}
 
-  if (!email || !senha) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  try {
-    await signInWithEmailAndPassword(auth, email, senha);
-    alert("Login realizado!");
-  } catch (e) {
-    alert("Email ou senha inválidos");
-  }
-};
+// 🚪 LOGOUT
+function logout() {
+  auth.signOut();
+  location.reload();
+}
 </script>
 
 </body>
