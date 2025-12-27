@@ -3,70 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat</title>
+<title>Chat App</title>
 
 <style>
 body {
-  margin:0;
+  margin: 0;
   font-family: Arial, sans-serif;
-  background: linear-gradient(135deg,#00c6ff,#0072ff);
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color: #fff;
+}
+.container {
+  max-width: 420px;
+  margin: auto;
+  min-height: 100vh;
+  padding: 20px;
 }
 .card {
-  background:#fff;
-  max-width:350px;
-  margin:100px auto;
-  padding:20px;
-  border-radius:12px;
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+  padding: 20px;
 }
-input,button {
-  width:100%;
-  padding:10px;
-  margin:6px 0;
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: none;
 }
 button {
-  background:#0072ff;
-  color:#fff;
-  border:none;
+  background: #1ebea5;
+  color: #fff;
+  font-weight: bold;
 }
+.hidden { display: none; }
+.chat {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+.msg {
+  margin-bottom: 8px;
+}
+.me { text-align: right; color: green; }
 </style>
 </head>
 
 <body>
 
-<div class="card">
+<div class="container">
+
+<div id="auth" class="card">
   <h2>Login</h2>
   <input id="email" placeholder="Email">
   <input id="password" type="password" placeholder="Senha">
   <button onclick="login()">Entrar</button>
   <button onclick="register()">Cadastrar</button>
+  <button onclick="reset()">Esqueci a senha</button>
 </div>
 
-<!-- FIREBASE CDN (OBRIGATÓRIO) -->
+<div id="app" class="hidden">
+  <div class="card">
+    <h3>Seu código:</h3>
+    <b id="myCode"></b>
+    <input id="contactCode" placeholder="Código do contato">
+    <input id="contactName" placeholder="Nome do contato">
+    <button onclick="addContact()">Adicionar contato</button>
+  </div>
+
+  <div class="card">
+    <h3>Chat</h3>
+    <div class="chat" id="chat"></div>
+    <input id="message" placeholder="Mensagem">
+    <button onclick="send()">Enviar</button>
+  </div>
+</div>
+
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
 const firebaseConfig = {
   apiKey: "SUA_API_KEY_AQUI",
   authDomain: "chat-a1210.firebaseapp.com",
-  projectId: "chat-a1210",
+  projectId: "chat-a1210"
 };
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
 
-function login(){
-  auth.signInWithEmailAndPassword(
-    email.value, password.value
-  ).then(()=>alert("Logado"))
-   .catch(e=>alert(e.message));
+function generateCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-function register(){
-  auth.createUserWithEmailAndPassword(
-    email.value, password.value
-  ).then(()=>alert("Conta criada"))
-   .catch(e=>alert(e.message));
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+
+    const ref = db.collection("users").doc(user.uid);
+    ref.get().then(doc => {
+      if (!doc.exists) {
+        ref.set({ code: generateCode() });
+      }
+      ref.get().then(d => {
+        document.getElementById("myCode").innerText = d.data().code;
+      });
+    });
+  }
+});
+
+function login() {
+  auth.signInWithEmailAndPassword(email.value, password.value);
+}
+function register() {
+  auth.createUserWithEmailAndPassword(email.value, password.value);
+}
+function reset() {
+  auth.sendPasswordResetEmail(email.value);
+}
+function addContact() {
+  alert("Contato salvo (estrutura pronta)");
+}
+function send() {
+  const chat = document.getElementById("chat");
+  const div = document.createElement("div");
+  div.className = "msg me";
+  div.innerText = message.value;
+  chat.appendChild(div);
+  message.value = "";
 }
 </script>
 
