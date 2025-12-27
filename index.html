@@ -10,167 +10,191 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
+*{box-sizing:border-box;font-family:Arial}
 body{
   margin:0;
-  font-family:Arial;
-  background:linear-gradient(135deg,#0f9b8e,#0a3d62);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg,#00c6ff,#0072ff);
 }
-.box{
-  max-width:400px;
-  margin:30px auto;
+.screen{
+  width:100%;
+  max-width:390px;
   background:#fff;
-  padding:20px;
-  border-radius:10px;
+  padding:22px;
+  border-radius:16px;
+  box-shadow:0 15px 40px rgba(0,0,0,.25);
 }
-h2{text-align:center}
+h2{text-align:center;color:#0072ff}
 input,button{
   width:100%;
-  padding:12px;
+  padding:13px;
   margin:6px 0;
+  border-radius:10px;
 }
+input{border:1px solid #ccc}
 button{
-  background:#0f9b8e;
-  color:#fff;
   border:none;
+  background:linear-gradient(135deg,#00c6ff,#0072ff);
+  color:#fff;
   font-size:16px;
+  font-weight:bold;
 }
-.link{
-  text-align:center;
-  color:#0f9b8e;
-  cursor:pointer;
-}
+.link{text-align:center;color:#0072ff;font-weight:bold;cursor:pointer}
 .hidden{display:none}
 
+/* APP */
+.profile{text-align:center}
+.profile img{
+  width:80px;height:80px;border-radius:50%;object-fit:cover;
+}
 #chatBox{
-  height:260px;
-  overflow-y:auto;
-  background:#f1f1f1;
-  padding:10px;
-  margin:10px 0;
+  height:220px;background:#f2f2f2;
+  padding:10px;border-radius:10px;overflow-y:auto;
 }
-.msg{
-  padding:8px;
-  margin:6px 0;
-  border-radius:6px;
-  max-width:80%;
-}
-.me{background:#c8f7c5;margin-left:auto}
+.msg{padding:8px;border-radius:10px;margin:6px 0;max-width:80%}
+.me{background:#00c6ff;color:#fff;margin-left:auto}
 .other{background:#ddd}
+.contact{
+  padding:10px;border-bottom:1px solid #eee;cursor:pointer;
+}
+.contact:hover{background:#f0f0f0}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div class="box" id="loginBox">
+<div class="screen" id="login">
 <h2>Login</h2>
-<input id="loginEmail" placeholder="Email">
-<input id="loginPass" type="password" placeholder="Senha">
+<input id="lEmail" placeholder="Email">
+<input id="lPass" type="password" placeholder="Senha">
 <button onclick="login()">Entrar</button>
-<div class="link" onclick="showRegister()">Criar conta</div>
+<div class="link" onclick="show('reset')">Esqueci a senha</div>
+<div class="link" onclick="show('register')">Criar conta</div>
 </div>
 
 <!-- CADASTRO -->
-<div class="box hidden" id="registerBox">
+<div class="screen hidden" id="register">
 <h2>Cadastro</h2>
-<input id="regName" placeholder="Nome">
-<input id="regEmail" placeholder="Email">
-<input id="regPass" type="password" placeholder="Senha">
+<input id="rEmail" placeholder="Email">
+<input id="rPass" type="password" placeholder="Senha">
+<input id="rPhoto" placeholder="URL da foto de perfil">
 <button onclick="register()">Cadastrar</button>
-<div class="link" onclick="showLogin()">Já tenho conta</div>
+<div class="link" onclick="show('login')">Voltar</div>
+</div>
+
+<!-- RESET -->
+<div class="screen hidden" id="reset">
+<h2>Recuperar senha</h2>
+<input id="resetEmail" placeholder="Email">
+<button onclick="resetPass()">Enviar</button>
+<div class="link" onclick="show('login')">Voltar</div>
 </div>
 
 <!-- APP -->
-<div class="box hidden" id="appBox">
-<h2>Perfil</h2>
-<p id="myCode"></p>
+<div class="screen hidden" id="app">
+<div class="profile">
+<img id="photo">
+<p>Seu código: <b id="myCode"></b></p>
+</div>
 
-<input id="contactCode" placeholder="Código do contato">
-<button onclick="openChat()">Abrir conversa</button>
+<h3>Contatos</h3>
+<div id="contacts"></div>
+
+<input id="newCode" placeholder="Código do contato">
+<input id="newName" placeholder="Nome para salvar">
+<button onclick="addContact()">Adicionar</button>
+
+<hr>
 
 <div id="chatBox"></div>
-
-<input id="msgInput" placeholder="Mensagem">
-<button onclick="sendMsg()">Enviar</button>
+<input id="msg">
+<button onclick="send()">Enviar</button>
 
 <div class="link" onclick="logout()">Sair</div>
 </div>
 
 <script>
-// 🔥 FIREBASE
 firebase.initializeApp({
-  apiKey: "SUA_API_KEY",
-  authDomain: "SEU_DOMINIO",
-  projectId: "SEU_PROJECT_ID"
+  apiKey: "AIzaSyCb3qXhVccF5zaM1kT7Y0qSgpyJlltTWSE",
+  authDomain: "chat-a1210.firebaseapp.com",
+  projectId: "chat-a1210"
 });
 
-const auth = firebase.auth();
-const db = firebase.firestore();
+const auth=firebase.auth();
+const db=firebase.firestore();
+let chatId=null, unsubscribe=null;
 
-let chatId = null;
-let unsubscribe = null;
-
-// TELAS
-function showRegister(){
-  loginBox.classList.add("hidden");
-  registerBox.classList.remove("hidden");
-}
-function showLogin(){
-  registerBox.classList.add("hidden");
-  loginBox.classList.remove("hidden");
+function show(id){
+  ["login","register","reset","app"].forEach(s=>document.getElementById(s).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
 }
 
-// GERAR CÓDIGO
-function gerarCodigo(){
-  return Math.random().toString(36).substring(2,8).toUpperCase();
-}
+function code(){return Math.random().toString(36).substr(2,6).toUpperCase();}
 
-// CADASTRO
 function register(){
-  auth.createUserWithEmailAndPassword(regEmail.value, regPass.value)
+  auth.createUserWithEmailAndPassword(rEmail.value,rPass.value)
   .then(res=>{
     return db.collection("users").doc(res.user.uid).set({
-      name: regName.value,
-      code: gerarCodigo()
+      code:code(),
+      photo:rPhoto.value||"https://i.imgur.com/1X4jJYF.png"
     });
-  })
-  .catch(e=>alert(e.message));
+  });
 }
 
-// LOGIN
 function login(){
-  auth.signInWithEmailAndPassword(loginEmail.value, loginPass.value)
-  .catch(e=>alert(e.message));
+  auth.signInWithEmailAndPassword(lEmail.value,lPass.value);
 }
 
-// LOGIN STATE
-auth.onAuthStateChanged(user=>{
-  if(user){
-    loginBox.classList.add("hidden");
-    registerBox.classList.add("hidden");
-    appBox.classList.remove("hidden");
+function resetPass(){
+  auth.sendPasswordResetEmail(resetEmail.value)
+  .then(()=>alert("Email enviado"));
+}
 
-    db.collection("users").doc(user.uid).get()
-    .then(d=>{
-      myCode.innerHTML = "Seu código: <b>"+d.data().code+"</b>";
-    });
-  }
+auth.onAuthStateChanged(user=>{
+  if(!user) return;
+  show("app");
+  db.collection("users").doc(user.uid).get().then(d=>{
+    myCode.innerText=d.data().code;
+    photo.src=d.data().photo;
+  });
+  loadContacts();
 });
 
-// ABRIR CHAT
-async function openChat(){
-  if(unsubscribe) unsubscribe();
-  chatBox.innerHTML = "";
+function addContact(){
+  db.collection("contacts").doc(auth.currentUser.uid)
+  .collection("items").add({
+    code:newCode.value,
+    name:newName.value
+  });
+  newCode.value="";newName.value="";
+}
 
-  const snap = await db.collection("users")
-  .where("code","==",contactCode.value).get();
+function loadContacts(){
+  db.collection("contacts").doc(auth.currentUser.uid)
+  .collection("items").onSnapshot(s=>{
+    contacts.innerHTML="";
+    s.forEach(d=>{
+      const c=d.data();
+      const div=document.createElement("div");
+      div.className="contact";
+      div.innerText=c.name+" ("+c.code+")";
+      div.onclick=()=>openChat(c.code);
+      contacts.appendChild(div);
+    });
+  });
+}
 
-  if(snap.empty) return alert("Código não encontrado");
-
-  const otherId = snap.docs[0].id;
-  chatId = [auth.currentUser.uid, otherId].sort().join("_");
-
-  unsubscribe = db.collection("chats").doc(chatId)
+async function openChat(code){
+  if(unsubscribe)unsubscribe();
+  const snap=await db.collection("users").where("code","==",code).get();
+  if(snap.empty)return alert("Não encontrado");
+  const other=snap.docs[0].id;
+  chatId=[auth.currentUser.uid,other].sort().join("_");
+  unsubscribe=db.collection("chats").doc(chatId)
   .collection("msgs").orderBy("time")
   .onSnapshot(s=>{
     chatBox.innerHTML="";
@@ -184,24 +208,20 @@ async function openChat(){
   });
 }
 
-// ENVIAR MSG
-function sendMsg(){
-  if(!chatId || !msgInput.value) return;
+function send(){
+  if(!chatId||!msg.value)return;
   db.collection("chats").doc(chatId)
   .collection("msgs").add({
-    uid: auth.currentUser.uid,
-    text: msgInput.value,
-    time: firebase.firestore.FieldValue.serverTimestamp()
+    uid:auth.currentUser.uid,
+    text:msg.value,
+    time:firebase.firestore.FieldValue.serverTimestamp()
   });
-  msgInput.value="";
+  msg.value="";
 }
 
-// SAIR
 function logout(){
-  auth.signOut();
-  location.reload();
+  auth.signOut();location.reload();
 }
 </script>
-
 </body>
 </html>
