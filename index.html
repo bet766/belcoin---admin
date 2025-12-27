@@ -2,223 +2,202 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Chat Firebase</title>
+<title>Chat por Código</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
-body {
+body{
   margin:0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg,#0f9b8e,#0a3d62);
-  color:#fff;
+  font-family:Arial;
+  background:linear-gradient(135deg,#0f9b8e,#0a3d62);
 }
-
-.container {
+.box{
   max-width:400px;
-  margin:40px auto;
+  margin:30px auto;
   background:#fff;
-  color:#000;
   padding:20px;
   border-radius:10px;
 }
-
-h2 { text-align:center }
-
-input, button {
+h2{text-align:center}
+input,button{
   width:100%;
   padding:12px;
-  margin:8px 0;
-  border-radius:6px;
-  border:1px solid #ccc;
+  margin:6px 0;
 }
-
-button {
+button{
   background:#0f9b8e;
   color:#fff;
   border:none;
   font-size:16px;
 }
-
-.link {
+.link{
   text-align:center;
-  margin-top:10px;
   color:#0f9b8e;
   cursor:pointer;
 }
+.hidden{display:none}
 
-/* CHAT */
-#chatBox {
-  height:300px;
+#chatBox{
+  height:260px;
   overflow-y:auto;
   background:#f1f1f1;
   padding:10px;
-  border-radius:6px;
+  margin:10px 0;
 }
-
-.msg {
-  margin:6px 0;
+.msg{
   padding:8px;
+  margin:6px 0;
   border-radius:6px;
   max-width:80%;
 }
-
-.me { background:#c8f7c5; margin-left:auto }
-.other { background:#ddd }
-
-.hidden { display:none }
+.me{background:#c8f7c5;margin-left:auto}
+.other{background:#ddd}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div class="container" id="loginScreen">
-  <h2>Login</h2>
-  <input id="loginEmail" placeholder="Email">
-  <input id="loginPass" type="password" placeholder="Senha">
-  <button onclick="login()">Entrar</button>
-  <div class="link" onclick="showRegister()">Criar conta</div>
+<div class="box" id="loginBox">
+<h2>Login</h2>
+<input id="loginEmail" placeholder="Email">
+<input id="loginPass" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+<div class="link" onclick="showRegister()">Criar conta</div>
 </div>
 
 <!-- CADASTRO -->
-<div class="container hidden" id="registerScreen">
-  <h2>Cadastro</h2>
-  <input id="regName" placeholder="Nome">
-  <input id="regEmail" placeholder="Email">
-  <input id="regPass" type="password" placeholder="Senha">
-  <button onclick="register()">Cadastrar</button>
-  <div class="link" onclick="showLogin()">Já tenho conta</div>
+<div class="box hidden" id="registerBox">
+<h2>Cadastro</h2>
+<input id="regName" placeholder="Nome">
+<input id="regEmail" placeholder="Email">
+<input id="regPass" type="password" placeholder="Senha">
+<button onclick="register()">Cadastrar</button>
+<div class="link" onclick="showLogin()">Já tenho conta</div>
 </div>
 
-<!-- CHAT -->
-<div class="container hidden" id="chatScreen">
-  <h2>Chat</h2>
-  <p id="myCode"></p>
+<!-- APP -->
+<div class="box hidden" id="appBox">
+<h2>Perfil</h2>
+<p id="myCode"></p>
 
-  <input id="contactCode" placeholder="Código do contato">
-  <button onclick="openChat()">Abrir conversa</button>
+<input id="contactCode" placeholder="Código do contato">
+<button onclick="openChat()">Abrir conversa</button>
 
-  <div id="chatBox"></div>
+<div id="chatBox"></div>
 
-  <input id="msgInput" placeholder="Mensagem">
-  <button onclick="sendMsg()">Enviar</button>
+<input id="msgInput" placeholder="Mensagem">
+<button onclick="sendMsg()">Enviar</button>
 
-  <div class="link" onclick="logout()">Sair</div>
+<div class="link" onclick="logout()">Sair</div>
 </div>
 
 <script>
-// 🔥 FIREBASE CONFIG
+// 🔥 FIREBASE
 firebase.initializeApp({
-  apiKey: "AIzaSyCb3qXhVccF5zaM1kT7Y0qSgpyJlltTWSE",
-  authDomain: "chat-a1210.firebaseapp.com",
-  projectId: "chat-a1210"
+  apiKey: "SUA_API_KEY",
+  authDomain: "SEU_DOMINIO",
+  projectId: "SEU_PROJECT_ID"
 });
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-let currentChat = null;
+let chatId = null;
+let unsubscribe = null;
 
-// 🔁 TELAS
-function showRegister() {
-  loginScreen.classList.add("hidden");
-  registerScreen.classList.remove("hidden");
+// TELAS
+function showRegister(){
+  loginBox.classList.add("hidden");
+  registerBox.classList.remove("hidden");
+}
+function showLogin(){
+  registerBox.classList.add("hidden");
+  loginBox.classList.remove("hidden");
 }
 
-function showLogin() {
-  registerScreen.classList.add("hidden");
-  loginScreen.classList.remove("hidden");
-}
-
-// 🔑 CÓDIGO ÚNICO
-function gerarCodigo() {
+// GERAR CÓDIGO
+function gerarCodigo(){
   return Math.random().toString(36).substring(2,8).toUpperCase();
 }
 
-// 📝 CADASTRO
-function register() {
-  const name = regName.value;
-  const email = regEmail.value;
-  const pass = regPass.value;
-
-  if(!name || !email || !pass) {
-    alert("Preencha todos os campos");
-    return;
-  }
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    .then(res => {
-      const code = gerarCodigo();
-      db.collection("users").doc(res.user.uid).set({
-        name, email, code
-      });
-    })
-    .catch(e => alert(e.message));
+// CADASTRO
+function register(){
+  auth.createUserWithEmailAndPassword(regEmail.value, regPass.value)
+  .then(res=>{
+    return db.collection("users").doc(res.user.uid).set({
+      name: regName.value,
+      code: gerarCodigo()
+    });
+  })
+  .catch(e=>alert(e.message));
 }
 
-// 🔓 LOGIN
-function login() {
+// LOGIN
+function login(){
   auth.signInWithEmailAndPassword(loginEmail.value, loginPass.value)
-    .catch(e => alert(e.message));
+  .catch(e=>alert(e.message));
 }
 
-// 🚀 LISTENER DE LOGIN (AQUI ESTAVA O PROBLEMA)
-auth.onAuthStateChanged(user => {
-  if(user) {
-    loginScreen.classList.add("hidden");
-    registerScreen.classList.add("hidden");
-    chatScreen.classList.remove("hidden");
+// LOGIN STATE
+auth.onAuthStateChanged(user=>{
+  if(user){
+    loginBox.classList.add("hidden");
+    registerBox.classList.add("hidden");
+    appBox.classList.remove("hidden");
 
     db.collection("users").doc(user.uid).get()
-      .then(doc => {
-        myCode.innerHTML = "Seu código: <b>" + doc.data().code + "</b>";
-      });
+    .then(d=>{
+      myCode.innerHTML = "Seu código: <b>"+d.data().code+"</b>";
+    });
   }
 });
 
-// 💬 ABRIR CHAT
-async function openChat() {
-  const code = contactCode.value.trim();
-  const snap = await db.collection("users").where("code","==",code).get();
-  if(snap.empty) return alert("Usuário não encontrado");
+// ABRIR CHAT
+async function openChat(){
+  if(unsubscribe) unsubscribe();
+  chatBox.innerHTML = "";
 
-  const other = snap.docs[0].id;
-  currentChat = [auth.currentUser.uid, other].sort().join("_");
+  const snap = await db.collection("users")
+  .where("code","==",contactCode.value).get();
 
-  db.collection("chats").doc(currentChat)
-    .collection("msgs")
-    .orderBy("time")
-    .onSnapshot(s => {
-      chatBox.innerHTML = "";
-      s.forEach(d => {
-        const m = d.data();
-        const div = document.createElement("div");
-        div.className = "msg " + (m.uid === auth.currentUser.uid ? "me" : "other");
-        div.innerText = m.text;
-        chatBox.appendChild(div);
-      });
+  if(snap.empty) return alert("Código não encontrado");
+
+  const otherId = snap.docs[0].id;
+  chatId = [auth.currentUser.uid, otherId].sort().join("_");
+
+  unsubscribe = db.collection("chats").doc(chatId)
+  .collection("msgs").orderBy("time")
+  .onSnapshot(s=>{
+    chatBox.innerHTML="";
+    s.forEach(d=>{
+      const m=d.data();
+      const div=document.createElement("div");
+      div.className="msg "+(m.uid===auth.currentUser.uid?"me":"other");
+      div.innerText=m.text;
+      chatBox.appendChild(div);
     });
+  });
 }
 
-// ✉️ ENVIAR
-function sendMsg() {
-  if(!currentChat) return;
-  db.collection("chats").doc(currentChat)
-    .collection("msgs").add({
-      uid: auth.currentUser.uid,
-      text: msgInput.value,
-      time: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  msgInput.value = "";
+// ENVIAR MSG
+function sendMsg(){
+  if(!chatId || !msgInput.value) return;
+  db.collection("chats").doc(chatId)
+  .collection("msgs").add({
+    uid: auth.currentUser.uid,
+    text: msgInput.value,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  msgInput.value="";
 }
 
-// 🚪 LOGOUT
-function logout() {
+// SAIR
+function logout(){
   auth.signOut();
   location.reload();
 }
