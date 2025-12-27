@@ -1,226 +1,236 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Chat por Código</title>
+<title>ChatApp</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 
 <style>
-*{box-sizing:border-box;font-family:Arial}
 body{
   margin:0;
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  font-family:Arial,Helvetica,sans-serif;
   background:linear-gradient(135deg,#00c6ff,#0072ff);
 }
-.screen{
-  width:100%;
-  max-width:390px;
+.app{
+  max-width:420px;
+  margin:auto;
+  min-height:100vh;
   background:#fff;
-  padding:22px;
-  border-radius:16px;
-  box-shadow:0 15px 40px rgba(0,0,0,.25);
+  padding:15px;
 }
-h2{text-align:center;color:#0072ff}
+h2,h3{text-align:center}
 input,button{
   width:100%;
-  padding:13px;
+  padding:12px;
   margin:6px 0;
-  border-radius:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
 }
-input{border:1px solid #ccc}
 button{
-  border:none;
-  background:linear-gradient(135deg,#00c6ff,#0072ff);
+  background:#0072ff;
   color:#fff;
-  font-size:16px;
   font-weight:bold;
+  border:none;
 }
-.link{text-align:center;color:#0072ff;font-weight:bold;cursor:pointer}
-.hidden{display:none}
-
-/* APP */
-.profile{text-align:center}
-.profile img{
-  width:80px;height:80px;border-radius:50%;object-fit:cover;
-}
-#chatBox{
-  height:220px;background:#f2f2f2;
-  padding:10px;border-radius:10px;overflow-y:auto;
-}
-.msg{padding:8px;border-radius:10px;margin:6px 0;max-width:80%}
-.me{background:#00c6ff;color:#fff;margin-left:auto}
-.other{background:#ddd}
+.small{font-size:12px;color:#555;text-align:center}
 .contact{
-  padding:10px;border-bottom:1px solid #eee;cursor:pointer;
+  padding:12px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
 }
-.contact:hover{background:#f0f0f0}
+.chatBox{
+  height:300px;
+  overflow-y:auto;
+  border:1px solid #ddd;
+  padding:10px;
+}
+.msg{
+  margin:5px 0;
+}
+.me{text-align:right;color:#0072ff}
+.typing{font-size:12px;color:#999}
+.blocked{color:red;font-size:12px}
+.profile{
+  text-align:center;
+}
+.profile img{
+  width:80px;
+  height:80px;
+  border-radius:50%;
+}
 </style>
 </head>
 
 <body>
+<div class="app" id="app"></div>
 
-<!-- LOGIN -->
-<div class="screen" id="login">
+<script>
+const firebaseConfig = {
+  apiKey: "SUA_API_KEY",
+  authDomain: "chat-a1210.firebaseapp.com",
+  projectId: "chat-a1210",
+  storageBucket: "chat-a1210.appspot.com",
+  messagingSenderId: "158588715768",
+  appId: "1:158588715768:web:15d8dd4f109250954cb10d"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const app = document.getElementById("app");
+
+function code(){
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+/* LOGIN */
+function renderLogin(){
+app.innerHTML=`
 <h2>Login</h2>
-<input id="lEmail" placeholder="Email">
-<input id="lPass" type="password" placeholder="Senha">
+<input id="email" placeholder="Email">
+<input id="senha" type="password" placeholder="Senha">
 <button onclick="login()">Entrar</button>
-<div class="link" onclick="show('reset')">Esqueci a senha</div>
-<div class="link" onclick="show('register')">Criar conta</div>
-</div>
-
-<!-- CADASTRO -->
-<div class="screen hidden" id="register">
-<h2>Cadastro</h2>
-<input id="rEmail" placeholder="Email">
-<input id="rPass" type="password" placeholder="Senha">
-<input id="rPhoto" placeholder="URL da foto de perfil">
 <button onclick="register()">Cadastrar</button>
-<div class="link" onclick="show('login')">Voltar</div>
-</div>
+<button onclick="reset()">Esqueci a senha</button>
+`;
+}
 
-<!-- RESET -->
-<div class="screen hidden" id="reset">
-<h2>Recuperar senha</h2>
-<input id="resetEmail" placeholder="Email">
-<button onclick="resetPass()">Enviar</button>
-<div class="link" onclick="show('login')">Voltar</div>
-</div>
+function login(){
+auth.signInWithEmailAndPassword(email.value,senha.value);
+}
 
-<!-- APP -->
-<div class="screen hidden" id="app">
-<div class="profile">
-<img id="photo">
-<p>Seu código: <b id="myCode"></b></p>
-</div>
+function register(){
+auth.createUserWithEmailAndPassword(email.value,senha.value)
+.then(res=>{
+db.collection("users").doc(res.user.uid).set({
+code:code(),
+photo:"",
+});
+});
+}
+
+function reset(){
+auth.sendPasswordResetEmail(email.value)
+.then(()=>alert("Email enviado"));
+}
+
+/* APP */
+auth.onAuthStateChanged(async user=>{
+if(!user){renderLogin();return;}
+const snap=await db.collection("users").doc(user.uid).get();
+renderApp(user.uid,snap.data().code);
+});
+
+function renderApp(uid,myCode){
+app.innerHTML=`
+<h3>Seu código</h3>
+<b>${myCode}</b>
+
+<input id="cCode" placeholder="Código do contato">
+<input id="cName" placeholder="Nome">
+<button onclick="addContact('${uid}')">Adicionar</button>
 
 <h3>Contatos</h3>
 <div id="contacts"></div>
 
-<input id="newCode" placeholder="Código do contato">
-<input id="newName" placeholder="Nome para salvar">
-<button onclick="addContact()">Adicionar</button>
+<div id="chat"></div>
+`;
+loadContacts(uid);
+}
 
-<hr>
+function addContact(uid){
+db.collection("users").where("code","==",cCode.value).get()
+.then(s=>{
+if(s.empty){alert("Código inválido");return;}
+const other=s.docs[0].id;
+db.collection("contacts").doc(uid).collection("list").doc(other)
+.set({name:cName.value,blocked:false});
+});
+}
 
-<div id="chatBox"></div>
+function loadContacts(uid){
+db.collection("contacts").doc(uid).collection("list")
+.onSnapshot(s=>{
+contacts.innerHTML="";
+s.forEach(d=>{
+contacts.innerHTML+=`
+<div class="contact" onclick="openChat('${uid}','${d.id}','${d.data().name}',${d.data().blocked})">
+${d.data().name}
+${d.data().blocked?'<div class="blocked">Bloqueado</div>':''}
+</div>`;
+});
+});
+}
+
+let typingTimeout;
+
+function openChat(me,other,name,blocked){
+if(blocked){alert("Contato bloqueado");return;}
+const chatId=[me,other].sort().join("_");
+
+chat.innerHTML=`
+<h3>${name}</h3>
+<div class="chatBox" id="msgs"></div>
+<div class="typing" id="typing"></div>
 <input id="msg">
-<button onclick="send()">Enviar</button>
+<button onclick="send('${chatId}','${me}')">Enviar</button>
+<button onclick="clearChat('${chatId}','${me}')">Apagar chat</button>
+<button onclick="block('${me}','${other}')">Bloquear</button>
+`;
 
-<div class="link" onclick="logout()">Sair</div>
-</div>
-
-<script>
-firebase.initializeApp({
-  apiKey: "AIzaSyCb3qXhVccF5zaM1kT7Y0qSgpyJlltTWSE",
-  authDomain: "chat-a1210.firebaseapp.com",
-  projectId: "chat-a1210"
+db.collection("chats").doc(chatId).collection("msgs")
+.orderBy("time")
+.onSnapshot(s=>{
+msgs.innerHTML="";
+s.forEach(m=>{
+msgs.innerHTML+=`
+<div class="msg ${m.data().from===me?'me':''}">
+${m.data().text}
+${m.data().seen?' ✔✔':' ✔'}
+</div>`;
+});
 });
 
-const auth=firebase.auth();
-const db=firebase.firestore();
-let chatId=null, unsubscribe=null;
+msg.oninput=()=>{
+db.collection("typing").doc(chatId).set({user:me});
+clearTimeout(typingTimeout);
+typingTimeout=setTimeout(()=>{
+db.collection("typing").doc(chatId).delete();
+},1000);
+};
 
-function show(id){
-  ["login","register","reset","app"].forEach(s=>document.getElementById(s).classList.add("hidden"));
-  document.getElementById(id).classList.remove("hidden");
-}
-
-function code(){return Math.random().toString(36).substr(2,6).toUpperCase();}
-
-function register(){
-  auth.createUserWithEmailAndPassword(rEmail.value,rPass.value)
-  .then(res=>{
-    return db.collection("users").doc(res.user.uid).set({
-      code:code(),
-      photo:rPhoto.value||"https://i.imgur.com/1X4jJYF.png"
-    });
-  });
-}
-
-function login(){
-  auth.signInWithEmailAndPassword(lEmail.value,lPass.value);
-}
-
-function resetPass(){
-  auth.sendPasswordResetEmail(resetEmail.value)
-  .then(()=>alert("Email enviado"));
-}
-
-auth.onAuthStateChanged(user=>{
-  if(!user) return;
-  show("app");
-  db.collection("users").doc(user.uid).get().then(d=>{
-    myCode.innerText=d.data().code;
-    photo.src=d.data().photo;
-  });
-  loadContacts();
+db.collection("typing").doc(chatId)
+.onSnapshot(t=>{
+typing.innerText=t.exists && t.data().user!==me?"Digitando...":"";
 });
-
-function addContact(){
-  db.collection("contacts").doc(auth.currentUser.uid)
-  .collection("items").add({
-    code:newCode.value,
-    name:newName.value
-  });
-  newCode.value="";newName.value="";
 }
 
-function loadContacts(){
-  db.collection("contacts").doc(auth.currentUser.uid)
-  .collection("items").onSnapshot(s=>{
-    contacts.innerHTML="";
-    s.forEach(d=>{
-      const c=d.data();
-      const div=document.createElement("div");
-      div.className="contact";
-      div.innerText=c.name+" ("+c.code+")";
-      div.onclick=()=>openChat(c.code);
-      contacts.appendChild(div);
-    });
-  });
+function send(chatId,me){
+db.collection("chats").doc(chatId).collection("msgs").add({
+text:msg.value,
+from:me,
+seen:false,
+time:Date.now()
+});
+msg.value="";
 }
 
-async function openChat(code){
-  if(unsubscribe)unsubscribe();
-  const snap=await db.collection("users").where("code","==",code).get();
-  if(snap.empty)return alert("Não encontrado");
-  const other=snap.docs[0].id;
-  chatId=[auth.currentUser.uid,other].sort().join("_");
-  unsubscribe=db.collection("chats").doc(chatId)
-  .collection("msgs").orderBy("time")
-  .onSnapshot(s=>{
-    chatBox.innerHTML="";
-    s.forEach(d=>{
-      const m=d.data();
-      const div=document.createElement("div");
-      div.className="msg "+(m.uid===auth.currentUser.uid?"me":"other");
-      div.innerText=m.text;
-      chatBox.appendChild(div);
-    });
-  });
+function clearChat(chatId,me){
+db.collection("chats").doc(chatId).collection("msgs")
+.where("from","==",me).get()
+.then(s=>s.forEach(d=>d.ref.delete()));
 }
 
-function send(){
-  if(!chatId||!msg.value)return;
-  db.collection("chats").doc(chatId)
-  .collection("msgs").add({
-    uid:auth.currentUser.uid,
-    text:msg.value,
-    time:firebase.firestore.FieldValue.serverTimestamp()
-  });
-  msg.value="";
-}
-
-function logout(){
-  auth.signOut();location.reload();
+function block(me,other){
+db.collection("contacts").doc(me).collection("list").doc(other)
+.update({blocked:true});
+alert("Contato bloqueado");
 }
 </script>
 </body>
