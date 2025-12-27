@@ -5,10 +5,10 @@
 <title>ChatApp</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+<!-- Firebase COMPAT (OBRIGATÓRIO) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <style>
 body{
@@ -37,7 +37,6 @@ button{
   font-weight:bold;
   border:none;
 }
-.small{font-size:12px;color:#555;text-align:center}
 .contact{
   padding:12px;
   border-bottom:1px solid #eee;
@@ -49,20 +48,10 @@ button{
   border:1px solid #ddd;
   padding:10px;
 }
-.msg{
-  margin:5px 0;
-}
+.msg{margin:5px 0}
 .me{text-align:right;color:#0072ff}
 .typing{font-size:12px;color:#999}
 .blocked{color:red;font-size:12px}
-.profile{
-  text-align:center;
-}
-.profile img{
-  width:80px;
-  height:80px;
-  border-radius:50%;
-}
 </style>
 </head>
 
@@ -71,7 +60,7 @@ button{
 
 <script>
 const firebaseConfig = {
-  apiKey: "SUA_API_KEY",
+  apiKey: "SUA_API_KEY_AQUI",
   authDomain: "chat-a1210.firebaseapp.com",
   projectId: "chat-a1210",
   storageBucket: "chat-a1210.appspot.com",
@@ -80,23 +69,22 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 const app = document.getElementById("app");
 
-function code(){
+function gerarCodigo(){
   return Math.random().toString(36).substring(2,8).toUpperCase();
 }
 
-/* LOGIN */
-function renderLogin(){
+function telaLogin(){
 app.innerHTML=`
 <h2>Login</h2>
 <input id="email" placeholder="Email">
 <input id="senha" type="password" placeholder="Senha">
 <button onclick="login()">Entrar</button>
-<button onclick="register()">Cadastrar</button>
+<button onclick="cadastro()">Cadastrar</button>
 <button onclick="reset()">Esqueci a senha</button>
 `;
 }
@@ -105,83 +93,74 @@ function login(){
 auth.signInWithEmailAndPassword(email.value,senha.value);
 }
 
-function register(){
+function cadastro(){
 auth.createUserWithEmailAndPassword(email.value,senha.value)
 .then(res=>{
 db.collection("users").doc(res.user.uid).set({
-code:code(),
-photo:"",
+code:gerarCodigo()
 });
 });
 }
 
 function reset(){
 auth.sendPasswordResetEmail(email.value)
-.then(()=>alert("Email enviado"));
+.then(()=>alert("Email de recuperação enviado"));
 }
 
-/* APP */
 auth.onAuthStateChanged(async user=>{
-if(!user){renderLogin();return;}
-const snap=await db.collection("users").doc(user.uid).get();
-renderApp(user.uid,snap.data().code);
+if(!user){telaLogin();return;}
+const doc=await db.collection("users").doc(user.uid).get();
+telaApp(user.uid,doc.data().code);
 });
 
-function renderApp(uid,myCode){
+function telaApp(uid,meuCodigo){
 app.innerHTML=`
 <h3>Seu código</h3>
-<b>${myCode}</b>
+<b>${meuCodigo}</b>
 
-<input id="cCode" placeholder="Código do contato">
-<input id="cName" placeholder="Nome">
-<button onclick="addContact('${uid}')">Adicionar</button>
+<input id="codigoContato" placeholder="Código do contato">
+<input id="nomeContato" placeholder="Nome do contato">
+<button onclick="addContato('${uid}')">Adicionar</button>
 
 <h3>Contatos</h3>
-<div id="contacts"></div>
-
+<div id="lista"></div>
 <div id="chat"></div>
 `;
-loadContacts(uid);
+carregarContatos(uid);
 }
 
-function addContact(uid){
-db.collection("users").where("code","==",cCode.value).get()
+function addContato(uid){
+db.collection("users").where("code","==",codigoContato.value).get()
 .then(s=>{
 if(s.empty){alert("Código inválido");return;}
-const other=s.docs[0].id;
-db.collection("contacts").doc(uid).collection("list").doc(other)
-.set({name:cName.value,blocked:false});
+const outro=s.docs[0].id;
+db.collection("contacts").doc(uid).collection("list").doc(outro)
+.set({name:nomeContato.value,blocked:false});
 });
 }
 
-function loadContacts(uid){
+function carregarContatos(uid){
 db.collection("contacts").doc(uid).collection("list")
 .onSnapshot(s=>{
-contacts.innerHTML="";
+lista.innerHTML="";
 s.forEach(d=>{
-contacts.innerHTML+=`
-<div class="contact" onclick="openChat('${uid}','${d.id}','${d.data().name}',${d.data().blocked})">
+lista.innerHTML+=`
+<div class="contact" onclick="abrirChat('${uid}','${d.id}','${d.data().name}',${d.data().blocked})">
 ${d.data().name}
-${d.data().blocked?'<div class="blocked">Bloqueado</div>':''}
 </div>`;
 });
 });
 }
 
-let typingTimeout;
-
-function openChat(me,other,name,blocked){
+function abrirChat(me,other,nome,blocked){
 if(blocked){alert("Contato bloqueado");return;}
 const chatId=[me,other].sort().join("_");
 
 chat.innerHTML=`
-<h3>${name}</h3>
+<h3>${nome}</h3>
 <div class="chatBox" id="msgs"></div>
-<div class="typing" id="typing"></div>
 <input id="msg">
-<button onclick="send('${chatId}','${me}')">Enviar</button>
-<button onclick="clearChat('${chatId}','${me}')">Apagar chat</button>
-<button onclick="block('${me}','${other}')">Bloquear</button>
+<button onclick="enviar('${chatId}','${me}')">Enviar</button>
 `;
 
 db.collection("chats").doc(chatId).collection("msgs")
@@ -192,45 +171,18 @@ s.forEach(m=>{
 msgs.innerHTML+=`
 <div class="msg ${m.data().from===me?'me':''}">
 ${m.data().text}
-${m.data().seen?' ✔✔':' ✔'}
 </div>`;
 });
 });
-
-msg.oninput=()=>{
-db.collection("typing").doc(chatId).set({user:me});
-clearTimeout(typingTimeout);
-typingTimeout=setTimeout(()=>{
-db.collection("typing").doc(chatId).delete();
-},1000);
-};
-
-db.collection("typing").doc(chatId)
-.onSnapshot(t=>{
-typing.innerText=t.exists && t.data().user!==me?"Digitando...":"";
-});
 }
 
-function send(chatId,me){
+function enviar(chatId,me){
 db.collection("chats").doc(chatId).collection("msgs").add({
 text:msg.value,
 from:me,
-seen:false,
 time:Date.now()
 });
 msg.value="";
-}
-
-function clearChat(chatId,me){
-db.collection("chats").doc(chatId).collection("msgs")
-.where("from","==",me).get()
-.then(s=>s.forEach(d=>d.ref.delete()));
-}
-
-function block(me,other){
-db.collection("contacts").doc(me).collection("list").doc(other)
-.update({blocked:true});
-alert("Contato bloqueado");
 }
 </script>
 </body>
